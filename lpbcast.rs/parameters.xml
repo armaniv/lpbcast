@@ -7,13 +7,13 @@
 									
 		/>
 				<parameter name="grid_size" displayName="Grid size" type="int" 
-						defaultValue="13" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
-						defaultValue="125" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

@@ -19,4 +19,25 @@ public class Message {
 		this.unSub = unSub;
 	}
 
+	public Node getSender() {
+		return sender;
+	}
+
+	public ArrayList<Event> getEvents() {
+		return events;
+	}
+
+	public ArrayList<String> getEventIds() {
+		return eventIds;
+	}
+
+
+	public ArrayList<Node> getSub() {
+		return sub;
+	}
+
+	public ArrayList<Node> getUnSub() {
+		return unSub;
+	}
+
 }
