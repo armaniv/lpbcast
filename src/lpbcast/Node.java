@@ -15,8 +15,8 @@ public class Node {
 	private static final int MAX_L = 15; 			// the maximum view sizes
 	private static final int MAX_M = 30; 			// the maximum buffers size
 	private static final int FANOUT = 3; 			// the num of processes to which deliver a message (every T)
-	private static final double P_EVENT = 0.1; 		// prob. that a node generate a new event
-	private static final double P_CRASH = 0.05;		// prob. that a node crash
+	private static final double P_EVENT = 0.05;		// prob. that a node generate a new event
+	private static final double P_CRASH = 0.002;	// prob. that a node crash
 
 	private Grid<Object> grid; 						// the context's grid
 	private int id; 								// the node's identifier
@@ -85,10 +85,14 @@ public class Node {
 
 		for (int i = 0; i < FANOUT && i < view_size; i++) {
 			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-
-			while (!selected_nodes.add(this.view.get(rnd))) {
-				rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-				this.view.get(rnd).receiveMessage(gossip); // ??? if a node crashed ??? (we can check bool and ignore)
+			
+			if (selected_nodes.add(this.view.get(rnd))){
+				this.view.get(rnd).receiveMessage(gossip);
+			} else {
+				while (!selected_nodes.add(this.view.get(rnd))) {
+					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+					this.view.get(rnd).receiveMessage(gossip); // ??? if a node crashed ??? (we can check bool and ignore)
+				}
 			}
 		}
 
@@ -196,7 +200,7 @@ public class Node {
 	
 	
 	public String getEventIdsSize() {
-		return "n:" + this.id + ", size:"+ this.eventIds.size();
+		return "n:" + this.id + ", size:"+ this.eventIds.size() + ", crash: " + this.crashed;
 	}
 	
 	
