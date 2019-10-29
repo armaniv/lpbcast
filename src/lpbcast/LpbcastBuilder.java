@@ -1,5 +1,7 @@
 package lpbcast;
 
+import java.util.HashMap;
+
 import repast.simphony.context.Context;
 import repast.simphony.context.space.grid.GridFactory;
 import repast.simphony.context.space.grid.GridFactoryFinder;
@@ -35,9 +37,14 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		Grid<Object> grid = gridFactory.createGrid("grid", context, new GridBuilderParameters<Object>(
 				new WrapAroundBorders(), new SimpleGridAdder<Object>(), false, grid_size, grid_size));
 		
+		
+		Network network = new Network();
+		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+		
 		// populate the grid with at most one Node per cell
 		for (int i = 0; i < node_count; i++) {
-			Node node = new Node(grid, i);
+			Node node = new Node(grid, i, network);
+			nodes.put(i, node);
 			context.add(node);
 			int x = RandomHelper.nextIntFromTo(0, grid_size - 1);
 			int y = RandomHelper.nextIntFromTo(0, grid_size - 1);
@@ -46,6 +53,8 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 				y = RandomHelper.nextIntFromTo(0, grid_size - 1);
 			}
 		}
+		
+		network.setNodes(nodes);
 
 		return context;
 	}

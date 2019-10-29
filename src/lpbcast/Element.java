@@ -24,7 +24,7 @@ public class Element {
 	}
 
 
-	public Node getGossip_sender() {
+	public Node getGossipSender() {
 		return gossip_sender;
 	}
 	

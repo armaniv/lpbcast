@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.IAction;
@@ -28,6 +31,7 @@ public class Node {
 													// an event that was not received from the sender
 	private static final int R = 5;					// rounds to wait before start fetching 
 													// an event that was not received from random participants
+	private Network network;						// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 						// the context's grid
 	private int id; 								// the node's identifier
 	private ArrayList<Node> view; 					// the node's view
@@ -41,7 +45,7 @@ public class Node {
 	private int eventIdCounter = 0;
 
 	
-	public Node(Grid<Object> grid, int id) {
+	public Node(Grid<Object> grid, int id, Network network) {
 		this.grid = grid;
 		this.id = id;
 		this.view = new ArrayList<>();
@@ -52,6 +56,7 @@ public class Node {
 		this.retrieveBuf = new ArrayList<>();
 		this.round = 0;
 		this.crashed = false;
+		this.network = network;
 	}
 	
 
@@ -88,10 +93,8 @@ public class Node {
 			this.crashed = true;
 			
 			// recover from crash in 3 thicks
-			
 			class RecoverAction implements IAction {
 				public void execute() {
-					//System.out.println(id + " RECOVERED");
 					recover();
 				}	        
 		    };
@@ -100,7 +103,6 @@ public class Node {
 		    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 3);
 			schedule.schedule(scheduleParameters, new RecoverAction());
-			//System.out.println(id + " RECOVER SCHEDULED");
 		}
 	}
 	
@@ -119,7 +121,14 @@ public class Node {
 
 		int view_size = this.view.size();
 		Set<Node> selected_nodes = new LinkedHashSet<>(); // support list
+		
+		ThreadLocalRandom.current()
+			.ints(0, view_size-1).distinct().limit(Math.min(FANOUT, view_size))
+			.forEach(random -> {
+				this.network.sendGossip(gossip, view.get(random).getId());
+			});
 
+		/*
 		for (int i = 0; i < FANOUT && i < view_size; i++) {
 			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 			
@@ -128,10 +137,11 @@ public class Node {
 			} else {
 				while (!selected_nodes.add(this.view.get(rnd))) {
 					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-					this.view.get(rnd).receiveMessage(gossip); // ??? if a node crashed ??? (we can check bool and ignore)
+					this.network.sendGossip(gossip, rnd); // ??? if a node crashed ??? (we can check bool and ignore)
 				}
 			}
 		}
+		*/
 
 		// clear lists
 		selected_nodes.clear();
@@ -227,7 +237,7 @@ public class Node {
 								this.element = element;
 							}
 							public void execute() {
-								tryRetrieveEventFromSender(element);
+								requestEventFromSender(element);
 							}	        
 					    };
 						
@@ -253,11 +263,10 @@ public class Node {
 		}
 	}
 	
-	public void tryRetrieveEventFromSender(Element element) {
+	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())){
 			// ask event.id from sender
-			Node sender = element.getGossip_sender();
-			Event e = sender.findEventId(element.getId());
+			Event e = network.requestEvent(element.getId(), element.getGossipSender().getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
@@ -267,7 +276,7 @@ public class Node {
 					this.element = element;
 				}
 				public void execute() {
-					tryRetrieveEventFromRandomProcess(element);
+					requestEventFromRandom(element);
 				}	        
 		    };
 			
@@ -281,21 +290,27 @@ public class Node {
 		}
 	}
 	
-	public void tryRetrieveEventFromRandomProcess(Element element) {
+	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
-		Node randomProcess = view.get(rnd);
-		String eId = element.getId();
-		if (randomProcess.findEventId(eId) == null) {
+		String eventId = element.getId();
+		Event event = network.requestEvent(eventId, view.get(rnd).getId());
+		if (event == null) {
 			// ask event directy to the source
-			String[] parts = eId.split("_");
+			String[] parts = eventId.split("_");
 			int source = Integer.parseInt(parts[1]);
-			
+			event = network.requestEvent(eventId, source);
+			if (event != null) {
+				this.events.add(event);
+				// LPB-DELIVER(event)
+				this.eventIds.add(event.getId());
+			}
 		}
 	}
 	
 	public Event findEventId(String eventId) {
-		for (Event e : this.events){
-			if (e.getId() == eventId) {
+		for (int i=0; i<this.events.size()-1; i++){
+			Event e = this.events.get(i);
+			if (e.getId().equals(eventId)) {
 				return e;
 			}
 		};
@@ -321,5 +336,6 @@ public class Node {
 	public boolean isCrashed() {
 		return this.crashed == true;
 	}
+	
 
 }
