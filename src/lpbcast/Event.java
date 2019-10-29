@@ -1,18 +1,16 @@
 package lpbcast;
 
-import java.util.UUID;
-
 public class Event {
 
 	private Node creator; 			// the Event creator
-	private UUID id; 			// the event's digest (randomly computed)
+	private String id; 			// the event's digest (randomly computed)
 
-	public Event(Node creator) {
+	public Event(Node creator, int eventCounter) {
 		this.creator = creator;
-		this.id = UUID.randomUUID();
+		this.id = creator.getId() + "_" + eventCounter;
 	}
 
-	public UUID getId() {
+	public String getId() {
 		return this.id;
 	}
 }

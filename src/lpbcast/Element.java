@@ -1,22 +1,20 @@
 package lpbcast;
 
-import java.util.UUID;
-
 public class Element {
 
-	private UUID id;
+	private String id;
 	private int round;
 	private Node gossip_sender;
 	
 	
-	public Element(UUID id, int round, Node gossip_sender) {
+	public Element(String id, int round, Node gossip_sender) {
 		this.id = id;
 		this.round = round;
 		this.gossip_sender = gossip_sender;
 	}
 
 
-	public UUID getId() {
+	public String getId() {
 		return id;
 	}
 

@@ -26,23 +26,23 @@ public class Node {
 	private static final int MAX_M = 30; 			// the maximum buffers size
 	private static final int FANOUT = 3; 			// the num of processes to which deliver a message (every T)
 	private static final double P_EVENT = 0.05;		// prob. that a node generate a new event
-	private static final double P_CRASH = 0.002;	// prob. that a node crash
+	private static final double P_CRASH = 0.001;	// prob. that a node crash
 	private static final int INITIAL_NEIGHBORS = 5; // size of initial connections of a node
 	private static final int K = 5;					// rounds to wait before start fetching 
 													// an event that was not received from the sender
 	private static final int R = 5;					// rounds to wait before start fetching 
 													// an event that was not received from random participants
-
 	private Grid<Object> grid; 						// the context's grid
 	private int id; 								// the node's identifier
 	private ArrayList<Node> view; 					// the node's view
 	private ArrayList<Event> events; 				// the node's events list
-	private ArrayList<UUID> eventIds; 				// the node's digest events list
+	private ArrayList<String> eventIds; 				// the node's digest events list
 	private ArrayList<Node> subs; 					// the node's subscriptions list
 	private ArrayList<Node> unSubs; 					// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 		// the message to retrieve list
 	private int round;								// the node's round
 	private Boolean crashed; 						// signal that the node is failed
+	private int eventIdCounter = 0;
 
 	
 	public Node(Grid<Object> grid, int id) {
@@ -90,9 +90,22 @@ public class Node {
 	public void SimulateCrash() {
 		if (RandomHelper.nextDoubleFromTo(0, 1) < P_CRASH) {
 			this.crashed = true;
+			
+			// recover from crash in 3 thicks
+			
+			class RecoverAction implements IAction {
+				public void execute() {
+					//System.out.println(id + " RECOVERED");
+					recover();
+				}	        
+		    };
+			
+			// schedule retrievement
+		    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 3);
+			schedule.schedule(scheduleParameters, new RecoverAction());
+			//System.out.println(id + " RECOVER SCHEDULED");
 		}
-		
-		// ???? a node recovers from crash ?????
 	}
 	
 
@@ -129,8 +142,8 @@ public class Node {
 		this.events.clear();
 
 		// with a certain probability generate a new event
-		if (/*RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT*/ this.id==0 && round==1) {
-			Event event = new Event(this);
+		if (RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT) {
+			Event event = new Event(this, eventIdCounter);
 			this.events.add(event);
 			this.eventIds.add(event.getId());
 		}
@@ -202,7 +215,7 @@ public class Node {
 				}
 			}
 			
-			for(UUID dig : gossip.getEventIds())
+			for(String dig : gossip.getEventIds())
 			{
 				if(!this.eventIds.contains(dig)) {
 					Element elem = new Element(dig, this.round, gossip.getSender());
@@ -223,8 +236,8 @@ public class Node {
 					    };
 						
 						// schedule retrievement
-						ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(K);
-						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+					    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+						ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + K);
 						schedule.schedule(scheduleParameters, new RetrieveAction(elem));
 					}
 				}
@@ -245,11 +258,12 @@ public class Node {
 	}
 	
 	public void tryRetrieveEventFromSender(Element element) {
+		System.out.println("FROM SENDER");
 		if (!this.eventIds.contains(element.getId())){
 			// ask event.id from sender
 			Node sender = element.getGossip_sender();
-			UUID uuid = sender.tryFindEventId(element.getId());
-			if (uuid == null) {
+			Event e = sender.tryFindEventId(element.getId());
+			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
 			class RetrieveAction implements IAction {
@@ -263,8 +277,8 @@ public class Node {
 		    };
 			
 			// schedule retrievement
-			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(R);
-			ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+		    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + R);
 			schedule.schedule(scheduleParameters, new RetrieveAction(element));
 			}
 		}else{
@@ -273,20 +287,25 @@ public class Node {
 	}
 	
 	public void tryRetrieveEventFromRandomProcess(Element element) {
+		System.out.println("FROM RANDOM");
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		Node randomProcess = view.get(rnd);
-		if (randomProcess.tryFindEventId(element.getId()) == null) {
-			// ask event directy to the source!!!!
-			// how can I know the source??? 
+		String eId = element.getId();
+		if (randomProcess.tryFindEventId(eId) == null) {
+			// ask event directy to the source
+			String[] parts = eId.split("-");
+			int source = Integer.parseInt(parts[1]);
+			
 		}
 	}
 	
-	public UUID tryFindEventId(UUID eventId) {
-		if (eventIds.contains(eventId)){
-			return eventId;
-		}else {
-			return null;
-		}
+	public Event tryFindEventId(String eventId) {
+		for (Event e : this.events){
+			if (e.getId() == eventId) {
+				return e;
+			}
+		};
+		return null;
 	}
 	
 	public String getEventIdsSize() {
@@ -297,5 +316,16 @@ public class Node {
 		return this.eventIds.size() > 0;
 	}
 	
+	public int getId() {
+		return this.id;
+	}
+	
+	public void recover() {
+		this.crashed = false;
+	}
+	
+	public boolean isCrashed() {
+		return this.crashed == true;
+	}
 
 }
