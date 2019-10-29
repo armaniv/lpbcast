@@ -25,13 +25,16 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 
 		// get the value for the parameters
 		Parameters params = RunEnvironment.getInstance().getParameters();
-		int grid_size = params.getInteger("grid_size");
-		int node_count = params.getInteger("node_count");
+		//int grid_size = params.getInteger("grid_size");
+		//int node_count = params.getInteger("node_count");
 
+		int grid_size = 20;
+		int node_count = 200;
+		
 		// create a grid
 		Grid<Object> grid = gridFactory.createGrid("grid", context, new GridBuilderParameters<Object>(
 				new WrapAroundBorders(), new SimpleGridAdder<Object>(), false, grid_size, grid_size));
-
+		
 		// populate the grid with at most one Node per cell
 		for (int i = 0; i < node_count; i++) {
 			Node node = new Node(grid, i);

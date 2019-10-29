@@ -3,12 +3,22 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
+import repast.simphony.engine.environment.RunEnvironment;
+import repast.simphony.engine.schedule.IAction;
+import repast.simphony.engine.schedule.ISchedule;
+import repast.simphony.engine.schedule.Schedule;
+import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
+import repast.simphony.query.space.grid.GridCell;
+import repast.simphony.query.space.grid.GridCellNgh;
 import repast.simphony.query.space.grid.MooreQuery;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.grid.Grid;
+import repast.simphony.space.grid.GridPoint;
 
 public class Node {
 
@@ -17,14 +27,19 @@ public class Node {
 	private static final int FANOUT = 3; 			// the num of processes to which deliver a message (every T)
 	private static final double P_EVENT = 0.05;		// prob. that a node generate a new event
 	private static final double P_CRASH = 0.002;	// prob. that a node crash
+	private static final int INITIAL_NEIGHBORS = 5; // size of initial connections of a node
+	private static final int K = 5;					// rounds to wait before start fetching 
+													// an event that was not received from the sender
+	private static final int R = 5;					// rounds to wait before start fetching 
+													// an event that was not received from random participants
 
 	private Grid<Object> grid; 						// the context's grid
 	private int id; 								// the node's identifier
 	private ArrayList<Node> view; 					// the node's view
 	private ArrayList<Event> events; 				// the node's events list
-	private ArrayList<String> eventIds; 			// the node's digest events list
-	private ArrayList<Node> sub; 					// the node's subscriptions list
-	private ArrayList<Node> unSub; 					// the node's un-subscriptions list
+	private ArrayList<UUID> eventIds; 				// the node's digest events list
+	private ArrayList<Node> subs; 					// the node's subscriptions list
+	private ArrayList<Node> unSubs; 					// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 		// the message to retrieve list
 	private int round;								// the node's round
 	private Boolean crashed; 						// signal that the node is failed
@@ -36,8 +51,8 @@ public class Node {
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
 		this.eventIds = new ArrayList<>();
-		this.sub = new ArrayList<>();
-		this.unSub = new ArrayList<>();
+		this.subs = new ArrayList<>();
+		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();
 		this.round = 0;
 		this.crashed = false;
@@ -46,15 +61,28 @@ public class Node {
 
 	@ScheduledMethod(start = 1)
 	public void initialize() {
-		// initially a node knows only its neighbor
-		MooreQuery<Node> query = new MooreQuery(grid, this);
-
-		for (Object o : query.query()) {
-			if (o instanceof Node) {
-				this.view.add((Node) o);
-				this.sub.add((Node) o);
+		// initially a node knows only its neighbor		
+		// neighbors are some nodes that are somewhere around this node
+		ArrayList<Node> neighbors = new ArrayList<Node>();
+		int neigborhood_extent = 1;
+		while (neighbors.size() < INITIAL_NEIGHBORS) {
+			GridPoint pt = grid.getLocation(this);
+			GridCellNgh<Node> nghCreator = new GridCellNgh<Node>(grid, pt, Node.class, neigborhood_extent, neigborhood_extent);
+			List<GridCell<Node>> gridCells = nghCreator.getNeighborhood(false);
+			
+			for (GridCell<Node> cell : gridCells) {
+				Object o = grid.getObjectAt(cell.getPoint().getX(), cell.getPoint().getY());
+				if (o instanceof Node && neighbors.size() < INITIAL_NEIGHBORS) {
+					Node node = (Node)o;
+					if (!neighbors.contains(node)) {
+						neighbors.add(node);
+					}
+				}
 			}
+			neigborhood_extent++;
 		}
+		view.addAll(neighbors);
+		subs.addAll(neighbors);		
 	}
 	
 	@ScheduledMethod(start = 2, interval = 3)
@@ -73,12 +101,12 @@ public class Node {
 		round++; // ??????? Is this the right place ????????
 
 		// add self to sub
-		if (!this.sub.contains(this)) {
-			this.sub.add(this);
+		if (!this.subs.contains(this)) {
+			this.subs.add(this);
 		}
 
 		// create a new gossip message
-		Message gossip = new Message(this, this.events, this.eventIds, this.sub, this.unSub);
+		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
 
 		int view_size = this.view.size();
 		Set<Node> selected_nodes = new LinkedHashSet<>(); // support list
@@ -101,9 +129,10 @@ public class Node {
 		this.events.clear();
 
 		// with a certain probability generate a new event
-		if (RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT) {
+		if (/*RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT*/ this.id==0 && round==1) {
 			Event event = new Event(this);
 			this.events.add(event);
+			this.eventIds.add(event.getId());
 		}
 	}
 	
@@ -115,19 +144,19 @@ public class Node {
 			
 			// ---- phase 1
 			this.view.removeAll(gossip.getUnSub());
-			this.sub.removeAll(gossip.getUnSub());
+			this.subs.removeAll(gossip.getUnSub());
 			
 			for(Node uns : gossip.getUnSub())
 			{
-				if(!this.unSub.contains(uns)) {
-					this.unSub.add(uns);
+				if(!this.unSubs.contains(uns)) {
+					this.unSubs.add(uns);
 				}
 			}
 			
-			while (this.unSub.size() > MAX_M)
+			while (this.unSubs.size() > MAX_M)
 			{
-				int rnd = RandomHelper.nextIntFromTo(0, this.unSub.size() - 1);
-				this.unSub.remove(rnd);
+				int rnd = RandomHelper.nextIntFromTo(0, this.unSubs.size() - 1);
+				this.unSubs.remove(rnd);
 			}
 			
 			
@@ -139,8 +168,8 @@ public class Node {
 					if(!this.view.contains(n_sub)) {
 						this.view.add(n_sub);
 						
-						if(!this.sub.contains(n_sub)){
-							this.sub.add(n_sub);
+						if(!this.subs.contains(n_sub)){
+							this.subs.add(n_sub);
 						}
 					}
 				}
@@ -151,35 +180,52 @@ public class Node {
 				int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 				Node node_removed = this.view.remove(rnd);
 				
-				if(!this.sub.contains(node_removed)){
-					this.sub.add(node_removed);
+				if(!this.subs.contains(node_removed)){
+					this.subs.add(node_removed);
 				}
 			}
 		
-			while (this.sub.size() > MAX_M)
+			while (this.subs.size() > MAX_M)
 			{
-				int rnd = RandomHelper.nextIntFromTo(0, this.sub.size() - 1);
-				this.sub.remove(rnd);
+				int rnd = RandomHelper.nextIntFromTo(0, this.subs.size() - 1);
+				this.subs.remove(rnd);
 			}
 			
 			
 			// ---- phase 3
 			for(Event e : gossip.getEvents())
 			{
-				if(!this.eventIds.contains(e.getDigest()))
+				if(!this.eventIds.contains(e.getId()))
 				{
 					this.events.add(e);
-					this.eventIds.add(e.getDigest());
+					this.eventIds.add(e.getId());
 				}
 			}
 			
-			for(String dig : gossip.getEventIds())
+			for(UUID dig : gossip.getEventIds())
 			{
 				if(!this.eventIds.contains(dig)) {
 					Element elem = new Element(dig, this.round, gossip.getSender());
 					
 					if(!this.retrieveBuf.contains(elem)){
 						this.retrieveBuf.add(elem);
+						
+						// schedule the retrievement of these events
+						
+						class RetrieveAction implements IAction {
+							private Element element;
+							public RetrieveAction(Element element) {
+								this.element = element;
+							}
+							public void execute() {
+								tryRetrieveEventFromSender(element);
+							}	        
+					    };
+						
+						// schedule retrievement
+						ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(K);
+						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+						schedule.schedule(scheduleParameters, new RetrieveAction(elem));
 					}
 				}
 			}
@@ -198,11 +244,58 @@ public class Node {
 		}
 	}
 	
+	public void tryRetrieveEventFromSender(Element element) {
+		if (!this.eventIds.contains(element.getId())){
+			// ask event.id from sender
+			Node sender = element.getGossip_sender();
+			UUID uuid = sender.tryFindEventId(element.getId());
+			if (uuid == null) {
+				// if we don't receive an answer from the sender
+				// schedule fetch from a random process
+			class RetrieveAction implements IAction {
+				private Element element;
+				public RetrieveAction(Element element) {
+					this.element = element;
+				}
+				public void execute() {
+					tryRetrieveEventFromRandomProcess(element);
+				}	        
+		    };
+			
+			// schedule retrievement
+			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(R);
+			ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+			schedule.schedule(scheduleParameters, new RetrieveAction(element));
+			}
+		}else{
+			retrieveBuf.remove(element);
+		}
+	}
+	
+	public void tryRetrieveEventFromRandomProcess(Element element) {
+		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
+		Node randomProcess = view.get(rnd);
+		if (randomProcess.tryFindEventId(element.getId()) == null) {
+			// ask event directy to the source!!!!
+			// how can I know the source??? 
+		}
+	}
+	
+	public UUID tryFindEventId(UUID eventId) {
+		if (eventIds.contains(eventId)){
+			return eventId;
+		}else {
+			return null;
+		}
+	}
 	
 	public String getEventIdsSize() {
 		return "n:" + this.id + ", size:"+ this.eventIds.size() + ", crash: " + this.crashed;
 	}
 	
+	public boolean hasEvents() {
+		return this.eventIds.size() > 0;
+	}
 	
 
 }
