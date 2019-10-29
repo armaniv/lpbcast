@@ -1,21 +1,17 @@
 package lpbcast;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.IAction;
 import repast.simphony.engine.schedule.ISchedule;
-import repast.simphony.engine.schedule.Schedule;
 import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.query.space.grid.GridCell;
 import repast.simphony.query.space.grid.GridCellNgh;
-import repast.simphony.query.space.grid.MooreQuery;
 import repast.simphony.random.RandomHelper;
 import repast.simphony.space.grid.Grid;
 import repast.simphony.space.grid.GridPoint;
@@ -258,11 +254,10 @@ public class Node {
 	}
 	
 	public void tryRetrieveEventFromSender(Element element) {
-		System.out.println("FROM SENDER");
 		if (!this.eventIds.contains(element.getId())){
 			// ask event.id from sender
 			Node sender = element.getGossip_sender();
-			Event e = sender.tryFindEventId(element.getId());
+			Event e = sender.findEventId(element.getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
@@ -287,19 +282,18 @@ public class Node {
 	}
 	
 	public void tryRetrieveEventFromRandomProcess(Element element) {
-		System.out.println("FROM RANDOM");
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		Node randomProcess = view.get(rnd);
 		String eId = element.getId();
-		if (randomProcess.tryFindEventId(eId) == null) {
+		if (randomProcess.findEventId(eId) == null) {
 			// ask event directy to the source
-			String[] parts = eId.split("-");
+			String[] parts = eId.split("_");
 			int source = Integer.parseInt(parts[1]);
 			
 		}
 	}
 	
-	public Event tryFindEventId(String eventId) {
+	public Event findEventId(String eventId) {
 		for (Event e : this.events){
 			if (e.getId() == eventId) {
 				return e;
