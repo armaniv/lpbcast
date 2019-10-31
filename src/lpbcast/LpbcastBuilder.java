@@ -3,6 +3,7 @@ package lpbcast;
 import java.util.HashMap;
 
 import repast.simphony.context.Context;
+import repast.simphony.context.space.graph.NetworkBuilder;
 import repast.simphony.context.space.grid.GridFactory;
 import repast.simphony.context.space.grid.GridFactoryFinder;
 import repast.simphony.dataLoader.ContextBuilder;
@@ -44,7 +45,13 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 				new WrapAroundBorders(), new SimpleGridAdder<Object>(), false, grid_size, grid_size));
 		
 		
-		Network network = new Network();
+		// Network to show edges between nodes which means 
+		// that a message between them has been sent
+		NetworkBuilder<Object> networkBuilder = new NetworkBuilder<Object>("messages network", context, true);
+		networkBuilder.buildNetwork();
+		// this is the actual entity which manages communication
+		MessagesNetwork network = new MessagesNetwork();
+		context.add(network);
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		
 		// populate the grid with at most one Node per cell

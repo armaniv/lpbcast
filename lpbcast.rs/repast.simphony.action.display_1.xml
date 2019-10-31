@@ -1,5 +1,5 @@
 <repast.simphony.visualization.engine.CartesianDisplayDescriptor simphonyVersion="2.7.0">
-  <name>GridDisplay</name>
+  <name>NetworkAndGrid</name>
   <type>2D</type>
   <styles>
     <entry>
@@ -13,8 +13,18 @@
       <null/>
     </entry>
   </editedStyles>
-  <netStyles/>
-  <editedNetStyles/>
+  <netStyles>
+    <entry>
+      <string>messages network</string>
+      <string>repast.simphony.visualizationOGL2D.DefaultEdgeStyleOGL2D</string>
+    </entry>
+  </netStyles>
+  <editedNetStyles>
+    <entry>
+      <string>messages network</string>
+      <null/>
+    </entry>
+  </editedNetStyles>
   <frequency>ON_MOVE</frequency>
   <schedParams>
     <start>1.0</start>
@@ -23,7 +33,7 @@
     <pType>LAST</pType>
     <duration>-1.0</duration>
     <frequency>REPEAT</frequency>
-    <hashCode>892802942</hashCode>
+    <hashCode>-1004093575</hashCode>
   </schedParams>
   <layoutClassName>foo.bar.baz</layoutClassName>
   <layoutProjection>grid</layoutProjection>
@@ -36,6 +46,11 @@
   </layerOrder>
   <projections>
     <repast.simphony.scenario.data.ProjectionData>
+      <id>messages network</id>
+      <attributes/>
+      <type>network</type>
+    </repast.simphony.scenario.data.ProjectionData>
+    <repast.simphony.scenario.data.ProjectionData>
       <id>grid</id>
       <attributes/>
       <type>grid</type>
@@ -46,9 +61,16 @@
   </visualizationProperties>
   <projectionDescriptors>
     <entry>
+      <string>messages network</string>
+      <repast.simphony.visualization.engine.DefaultProjectionDescriptor>
+        <proj reference="../../../../projections/repast.simphony.scenario.data.ProjectionData"/>
+        <props/>
+      </repast.simphony.visualization.engine.DefaultProjectionDescriptor>
+    </entry>
+    <entry>
       <string>grid</string>
       <repast.simphony.visualization.grid.GridProjectionDescriptor>
-        <proj reference="../../../../projections/repast.simphony.scenario.data.ProjectionData"/>
+        <proj reference="../../../../projections/repast.simphony.scenario.data.ProjectionData[2]"/>
         <props>
           <entry>
             <string>repast.simphony.visualization.grid.GridDecorator</string>

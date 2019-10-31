@@ -7,16 +7,16 @@ public class Message {
 	private Node sender; 						// the Message sender
 	private ArrayList<Event> events; 			// the message's events list
 	private ArrayList<String> eventIds; 		// the message's digest events list
-	private ArrayList<Integer> sub; 				// the message's subscriptions list
-	private ArrayList<Integer> unSub; 				// the message's un-subscriptions list
+	private ArrayList<Integer> subs; 				// the message's subscriptions list
+	private ArrayList<Integer> unSubs; 				// the message's un-subscriptions list
 
-	public Message(Node sender, ArrayList<Event> events, ArrayList<String> eventIds, ArrayList<Integer> sub, 
-			ArrayList<Integer> unSub) {
+	public Message(Node sender, ArrayList<Event> events, ArrayList<String> eventIds, ArrayList<Integer> subs, 
+			ArrayList<Integer> unSubs) {
 		this.sender = sender;
 		this.events = events;
 		this.eventIds = eventIds;
-		this.sub = sub;
-		this.unSub = unSub;
+		this.subs = subs;
+		this.unSubs = unSubs;
 	}
 
 	public Node getSender() {
@@ -32,12 +32,12 @@ public class Message {
 	}
 
 
-	public ArrayList<Integer> getSub() {
-		return sub;
+	public ArrayList<Integer> getSubs() {
+		return subs;
 	}
 
-	public ArrayList<Integer> getUnSub() {
-		return unSub;
+	public ArrayList<Integer> getUnSubs() {
+		return unSubs;
 	}
 
 }

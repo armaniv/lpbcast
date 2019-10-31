@@ -18,7 +18,7 @@ import repast.simphony.space.grid.GridPoint;
 public class Node {
 
 	// --- node's 'configuration' parameter
-	private Network network; 				// object that deals with localization and transfer of messages
+	private MessagesNetwork network; 				// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 				// the context's grid
 	private Boolean crashed; 				// signal that the node is failed
 	private int max_l; 						// the maximum view sizes
@@ -41,7 +41,7 @@ public class Node {
 	private int eventIdCounter; 			// count how many events a node created
 	
 
-	public Node(Grid<Object> grid, int id, Network network, int max_l, int max_m, int fanout, int initial_neighbors,
+	public Node(Grid<Object> grid, int id, MessagesNetwork network, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r) {
 		this.network = network;
 		this.grid = grid;
@@ -81,7 +81,7 @@ public class Node {
 				Object o = grid.getObjectAt(cell.getPoint().getX(), cell.getPoint().getY());
 				if (o instanceof Node && neighbors.size() < this.initial_neighbors) {
 					Node node = (Node) o;
-					if (!neighbors.contains(node)) {
+					if (!neighbors.contains(node.getId())) {
 						neighbors.add(node.getId());
 					}
 				}
@@ -98,7 +98,7 @@ public class Node {
 		round++;
 
 		// add self to sub
-		if (!this.subs.contains(this)) {
+		if (!this.subs.contains(this.getId())) {
 			this.subs.add(this.id);
 		}
 
@@ -110,7 +110,10 @@ public class Node {
 		// send the gossip message to random selected nodes
 		ThreadLocalRandom.current().ints(0, view_size).distinct().limit(Math.min(this.fanout, view_size))
 				.forEach(random -> {
-					this.network.sendGossip(gossip, view.get(random));
+					System.out.println(ThreadLocalRandom.current().ints(0, view_size).distinct());
+					System.out.println(random);
+					System.out.println(Math.min(this.fanout, view_size));
+					this.network.sendGossip(gossip, this.id, view.get(random));
 				});
 
 		this.events.clear();
@@ -131,10 +134,10 @@ public class Node {
 		if (!this.crashed) {
 
 			// ---- phase 1
-			this.view.removeAll(gossip.getUnSub());
-			this.subs.removeAll(gossip.getUnSub());
+			this.view.removeAll(gossip.getUnSubs());
+			this.subs.removeAll(gossip.getUnSubs());
 
-			for (Integer uns : gossip.getUnSub()) {
+			for (Integer uns : gossip.getUnSubs()) {
 				if (!this.unSubs.contains(uns)) {
 					this.unSubs.add(uns);
 				}
@@ -146,7 +149,7 @@ public class Node {
 			}
 
 			// ---- phase 2
-			for (Integer n_sub : gossip.getSub()) {
+			for (Integer n_sub : gossip.getSubs()) {
 				if (n_sub != this.id) {
 
 					if (!this.view.contains(n_sub)) {
@@ -226,7 +229,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())) {
 			// ask event.id from sender
-			Event e = network.requestEvent(element.getId(), element.getGossipSender().getId());
+			Event e = network.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
@@ -260,13 +263,13 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
-		Event event = network.requestEvent(eventId, view.get(rnd));
+		Event event = network.requestEvent(eventId, this.id, view.get(rnd));
 
 		if (event == null) {
 			// ask event directly to the source
 			String[] parts = eventId.split("_");
-			int source = Integer.parseInt(parts[0]);
-			event = network.requestEventToOriginator(eventId, source);
+			int eventCreator = Integer.parseInt(parts[0]);
+			event = network.requestEventToOriginator(eventId, this.id, eventCreator);
 			if (event != null) {
 				this.events.add(event);
 				// LPB-DELIVER(event)
