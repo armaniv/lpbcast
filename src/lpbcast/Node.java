@@ -1,12 +1,8 @@
 package lpbcast;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-
-import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.IAction;
@@ -23,7 +19,7 @@ public class Node {
 
 	private static final int MAX_L = 15; 			// the maximum view sizes
 	private static final int MAX_M = 30; 			// the maximum buffers size
-	private static final int FANOUT = 3; 			// the num of processes to which deliver a message (every T)
+	private static final int FANOUT = 4; 			// the num of processes to which deliver a message (every T)
 	private static final double P_EVENT = 0.05;		// prob. that a node generate a new event
 	private static final double P_CRASH = 0.001;	// prob. that a node crash
 	private static final int INITIAL_NEIGHBORS = 5; // size of initial connections of a node
@@ -86,7 +82,7 @@ public class Node {
 		subs.addAll(neighbors);		
 	}
 	
-	@ScheduledMethod(start = 2, interval = 3)
+	/*@ScheduledMethod(start = 2, interval = 3)
 	// crash are rare
 	public void SimulateCrash() {
 		if (RandomHelper.nextDoubleFromTo(0, 1) < P_CRASH) {
@@ -104,12 +100,13 @@ public class Node {
 			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 3);
 			schedule.schedule(scheduleParameters, new RecoverAction());
 		}
-	}
+	}*/
 	
 
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
-		round++; // ??????? Is this the right place ????????
+		
+		round++; 
 
 		// add self to sub
 		if (!this.subs.contains(this)) {
@@ -120,36 +117,20 @@ public class Node {
 		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
 
 		int view_size = this.view.size();
-		Set<Node> selected_nodes = new LinkedHashSet<>(); // support list
 		
+		// send the gossip message to random selected nodes
 		ThreadLocalRandom.current()
-			.ints(0, view_size-1).distinct().limit(Math.min(FANOUT, view_size))
+			.ints(0, view_size).distinct().limit(Math.min(FANOUT, view_size))
 			.forEach(random -> {
 				this.network.sendGossip(gossip, view.get(random).getId());
 			});
 
-		/*
-		for (int i = 0; i < FANOUT && i < view_size; i++) {
-			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-			
-			if (selected_nodes.add(this.view.get(rnd))){
-				this.view.get(rnd).receiveMessage(gossip);
-			} else {
-				while (!selected_nodes.add(this.view.get(rnd))) {
-					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-					this.network.sendGossip(gossip, rnd); // ??? if a node crashed ??? (we can check bool and ignore)
-				}
-			}
-		}
-		*/
-
-		// clear lists
-		selected_nodes.clear();
 		this.events.clear();
 
 		// with a certain probability generate a new event
-		if (RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT) {
+		if (/*RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT*/ round==1 && id ==1) {
 			Event event = new Event(this, eventIdCounter);
+			eventIdCounter++;
 			this.events.add(event);
 			this.eventIds.add(event.getId());
 		}
@@ -157,7 +138,6 @@ public class Node {
 	
 
 	public void receiveMessage(Message gossip) {
-		// ???? Simulate transmission delay ?????
 		
 		if (!this.crashed) {
 			
@@ -317,8 +297,8 @@ public class Node {
 		return null;
 	}
 	
-	public String getEventIdsSize() {
-		return "n:" + this.id + ", size:"+ this.eventIds.size() + ", crash: " + this.crashed;
+	public int getEventIdsSize() {
+		return this.eventIds.size();
 	}
 	
 	public boolean hasEvents() {
