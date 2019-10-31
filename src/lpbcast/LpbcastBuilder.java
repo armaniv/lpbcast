@@ -27,11 +27,17 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 
 		// get the value for the parameters
 		Parameters params = RunEnvironment.getInstance().getParameters();
-		//int grid_size = params.getInteger("grid_size");
-		//int node_count = params.getInteger("node_count");
-
-		int grid_size = 20;
-		int node_count = 200;
+		int grid_size = params.getInteger("grid_size");
+		int node_count = params.getInteger("node_count");
+		
+		int max_l = params.getInteger("max_l");
+		int max_m = params.getInteger("max_m");
+		int fanout = params.getInteger("fanout");
+		int initial_neighbors = params.getInteger("initial_neighbors");
+		int round_k = params.getInteger("round_k");
+		int round_r = params.getInteger("round_r");
+		int n_messages = params.getInteger("n_messages");
+		int churn_rate = params.getInteger("churn_rate");
 		
 		// create a grid
 		Grid<Object> grid = gridFactory.createGrid("grid", context, new GridBuilderParameters<Object>(
@@ -43,7 +49,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		
 		// populate the grid with at most one Node per cell
 		for (int i = 0; i < node_count; i++) {
-			Node node = new Node(grid, i, network);
+			Node node = new Node(grid, i, network, max_l, max_m, fanout, initial_neighbors, round_k, round_r);
 			nodes.put(i, node);
 			context.add(node);
 			int x = RandomHelper.nextIntFromTo(0, grid_size - 1);
