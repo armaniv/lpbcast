@@ -23,36 +23,39 @@ public class Node {
 	private static final double P_EVENT = 0.05;		// prob. that a node generate a new event
 	private static final double P_CRASH = 0.001;	// prob. that a node crash
 	private static final int INITIAL_NEIGHBORS = 5; // size of initial connections of a node
-	private static final int K = 5;					// rounds to wait before start fetching 
+	private static final int K = 2;					// rounds to wait before start fetching 
 													// an event that was not received from the sender
-	private static final int R = 5;					// rounds to wait before start fetching 
+	private static final int R = 2;					// rounds to wait before start fetching 
 													// an event that was not received from random participants
 	private Network network;						// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 						// the context's grid
 	private int id; 								// the node's identifier
 	private ArrayList<Node> view; 					// the node's view
 	private ArrayList<Event> events; 				// the node's events list
-	private ArrayList<String> eventIds; 				// the node's digest events list
+	private ArrayList<Event> myEvents;				// the events generates by this node 
+	private ArrayList<String> eventIds; 			// the node's digest events list
 	private ArrayList<Node> subs; 					// the node's subscriptions list
-	private ArrayList<Node> unSubs; 					// the node's un-subscriptions list
+	private ArrayList<Node> unSubs; 				// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 		// the message to retrieve list
 	private int round;								// the node's round
 	private Boolean crashed; 						// signal that the node is failed
-	private int eventIdCounter = 0;
+	private int eventIdCounter;
 
 	
 	public Node(Grid<Object> grid, int id, Network network) {
+		this.network = network;
 		this.grid = grid;
 		this.id = id;
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
+		this.myEvents = new ArrayList<>();
 		this.eventIds = new ArrayList<>();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();
 		this.round = 0;
 		this.crashed = false;
-		this.network = network;
+		this.eventIdCounter = 0;		
 	}
 	
 
@@ -130,9 +133,10 @@ public class Node {
 		// with a certain probability generate a new event
 		if (/*RandomHelper.nextDoubleFromTo(0, 1) < P_EVENT*/ round==1 && id ==1) {
 			Event event = new Event(this, eventIdCounter);
-			eventIdCounter++;
+			this.myEvents.add(event);
 			this.events.add(event);
 			this.eventIds.add(event.getId());
+			eventIdCounter++;
 		}
 	}
 	
@@ -250,23 +254,27 @@ public class Node {
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
-			class RetrieveAction implements IAction {
-				private Element element;
-				public RetrieveAction(Element element) {
-					this.element = element;
-				}
-				public void execute() {
-					requestEventFromRandom(element);
-				}	        
-		    };
+				class RetrieveAction implements IAction {
+					private Element element;
+					public RetrieveAction(Element element) {
+						this.element = element;
+					}
+					public void execute() {
+						requestEventFromRandom(element);
+					}	        
+				};
 			
-			// schedule retrievement
-		    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-			ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + R);
-			schedule.schedule(scheduleParameters, new RetrieveAction(element));
-			}
-		}else{
-			retrieveBuf.remove(element);
+				// schedule retrievement
+			    ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + R);
+				schedule.schedule(scheduleParameters, new RetrieveAction(element));
+			}else{
+				this.events.add(e);
+				this.eventIds.add(e.getId());
+				this.retrieveBuf.remove(element);
+				}
+		} else{
+			this.retrieveBuf.remove(element);
 		}
 	}
 	
@@ -274,35 +282,46 @@ public class Node {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
 		Event event = network.requestEvent(eventId, view.get(rnd).getId());
+		
 		if (event == null) {
-			// ask event directy to the source
+			// ask event directly to the source
 			String[] parts = eventId.split("_");
-			int source = Integer.parseInt(parts[1]);
-			event = network.requestEvent(eventId, source);
+			int source = Integer.parseInt(parts[0]);
+			event = network.requestEventToOriginator(eventId, source);
 			if (event != null) {
 				this.events.add(event);
 				// LPB-DELIVER(event)
 				this.eventIds.add(event.getId());
+				this.retrieveBuf.remove(element);
 			}
-		}
+		} else{
+			this.events.add(event);
+			this.eventIds.add(event.getId());
+			this.retrieveBuf.remove(element);
+			}
 	}
 	
 	public Event findEventId(String eventId) {
-		for (int i=0; i<this.events.size()-1; i++){
-			Event e = this.events.get(i);
+		for (Event e : this.events){
 			if (e.getId().equals(eventId)) {
 				return e;
 			}
-		};
+		}
 		return null;
 	}
 	
-	public int getEventIdsSize() {
-		return this.eventIds.size();
+	public Event findEventIdOriginator(String eventId) {
+		for (Event e : this.myEvents){
+			if (e.getId().equals(eventId)) {
+				return e;
+			}
+		}
+		return null;
 	}
 	
-	public boolean hasEvents() {
-		return this.eventIds.size() > 0;
+	
+	public int getEventIdsSize() {
+		return this.eventIds.size();
 	}
 	
 	public int getId() {
@@ -313,9 +332,8 @@ public class Node {
 		this.crashed = false;
 	}
 	
-	public boolean isCrashed() {
+	public boolean simulateCrashed() {
 		return this.crashed == true;
-	}
-	
+	}	
 
 }
