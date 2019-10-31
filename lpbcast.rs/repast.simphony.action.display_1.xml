@@ -1,5 +1,5 @@
 <repast.simphony.visualization.engine.CartesianDisplayDescriptor simphonyVersion="2.7.0">
-  <name>NetworkAndGrid</name>
+  <name>net</name>
   <type>2D</type>
   <styles>
     <entry>
@@ -15,17 +15,17 @@
   </editedStyles>
   <netStyles>
     <entry>
-      <string>messages network</string>
-      <string>repast.simphony.visualizationOGL2D.DefaultEdgeStyleOGL2D</string>
+      <string>network</string>
+      <string>repast.simphony.visualization.editedStyle.EditedEdgeStyle2D</string>
     </entry>
   </netStyles>
   <editedNetStyles>
     <entry>
-      <string>messages network</string>
-      <null/>
+      <string>network</string>
+      <string>network.style_0.xml</string>
     </entry>
   </editedNetStyles>
-  <frequency>ON_MOVE</frequency>
+  <frequency>ON_NEW</frequency>
   <schedParams>
     <start>1.0</start>
     <interval>1.0</interval>
@@ -33,10 +33,10 @@
     <pType>LAST</pType>
     <duration>-1.0</duration>
     <frequency>REPEAT</frequency>
-    <hashCode>-1004093575</hashCode>
+    <hashCode>12869152</hashCode>
   </schedParams>
-  <layoutClassName>foo.bar.baz</layoutClassName>
-  <layoutProjection>grid</layoutProjection>
+  <layoutClassName>repast.simphony.visualization.visualization2D.Random2DLayout</layoutClassName>
+  <layoutProjection>network</layoutProjection>
   <layoutInterval>0</layoutInterval>
   <layerOrder>
     <entry>
@@ -46,51 +46,18 @@
   </layerOrder>
   <projections>
     <repast.simphony.scenario.data.ProjectionData>
-      <id>messages network</id>
+      <id>network</id>
       <attributes/>
       <type>network</type>
     </repast.simphony.scenario.data.ProjectionData>
-    <repast.simphony.scenario.data.ProjectionData>
-      <id>grid</id>
-      <attributes/>
-      <type>grid</type>
-    </repast.simphony.scenario.data.ProjectionData>
   </projections>
-  <visualizationProperties class="repast.simphony.visualization.UnitSizeLayoutProperties">
-    <unitSize>15.0</unitSize>
-  </visualizationProperties>
   <projectionDescriptors>
     <entry>
-      <string>messages network</string>
+      <string>network</string>
       <repast.simphony.visualization.engine.DefaultProjectionDescriptor>
         <proj reference="../../../../projections/repast.simphony.scenario.data.ProjectionData"/>
         <props/>
       </repast.simphony.visualization.engine.DefaultProjectionDescriptor>
-    </entry>
-    <entry>
-      <string>grid</string>
-      <repast.simphony.visualization.grid.GridProjectionDescriptor>
-        <proj reference="../../../../projections/repast.simphony.scenario.data.ProjectionData[2]"/>
-        <props>
-          <entry>
-            <string>repast.simphony.visualization.grid.GridDecorator</string>
-            <map>
-              <entry>
-                <string>COLOR</string>
-                <int>-16777216</int>
-              </entry>
-              <entry>
-                <string>UNIT_SIZE</string>
-                <float>15.0</float>
-              </entry>
-              <entry>
-                <string>SHOW</string>
-                <boolean>true</boolean>
-              </entry>
-            </map>
-          </entry>
-        </props>
-      </repast.simphony.visualization.grid.GridProjectionDescriptor>
     </entry>
   </projectionDescriptors>
   <props/>

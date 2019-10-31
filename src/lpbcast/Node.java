@@ -1,9 +1,11 @@
 package lpbcast;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import repast.simphony.context.Context;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.IAction;
 import repast.simphony.engine.schedule.ISchedule;
@@ -12,13 +14,17 @@ import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.query.space.grid.GridCell;
 import repast.simphony.query.space.grid.GridCellNgh;
 import repast.simphony.random.RandomHelper;
+import repast.simphony.space.continuous.ContinuousSpace;
+import repast.simphony.space.graph.Network;
+import repast.simphony.space.graph.RepastEdge;
 import repast.simphony.space.grid.Grid;
 import repast.simphony.space.grid.GridPoint;
+import repast.simphony.util.ContextUtils;
 
 public class Node {
 
 	// --- node's 'configuration' parameter
-	private MessagesNetwork network; 				// object that deals with localization and transfer of messages
+	private Router router; 				// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 				// the context's grid
 	private Boolean crashed; 				// signal that the node is failed
 	private int max_l; 						// the maximum view sizes
@@ -41,9 +47,9 @@ public class Node {
 	private int eventIdCounter; 			// count how many events a node created
 	
 
-	public Node(Grid<Object> grid, int id, MessagesNetwork network, int max_l, int max_m, int fanout, int initial_neighbors,
+	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r) {
-		this.network = network;
+		this.router = router;
 		this.grid = grid;
 		this.crashed = false;
 		this.max_l = max_l;
@@ -73,9 +79,10 @@ public class Node {
 		int neigborhood_extent = 1;
 		while (neighbors.size() < this.initial_neighbors) {
 			GridPoint pt = grid.getLocation(this);
-			GridCellNgh<Node> nghCreator = new GridCellNgh<Node>(grid, pt, Node.class, neigborhood_extent,
-					neigborhood_extent);
-			List<GridCell<Node>> gridCells = nghCreator.getNeighborhood(false);
+			GridCellNgh<Node> nghCreator = 
+					new GridCellNgh<Node>(grid, pt, Node.class, neigborhood_extent, neigborhood_extent);
+			List<GridCell<Node>> gridCells = 
+					nghCreator.getNeighborhood(false);
 
 			for (GridCell<Node> cell : gridCells) {
 				Object o = grid.getObjectAt(cell.getPoint().getX(), cell.getPoint().getY());
@@ -92,6 +99,7 @@ public class Node {
 		subs.addAll(neighbors);
 	}
 
+	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
 
@@ -107,14 +115,44 @@ public class Node {
 
 		int view_size = this.view.size();
 
-		// send the gossip message to random selected nodes
-		ThreadLocalRandom.current().ints(0, view_size).distinct().limit(Math.min(this.fanout, view_size))
-				.forEach(random -> {
-					System.out.println(ThreadLocalRandom.current().ints(0, view_size).distinct());
-					System.out.println(random);
-					System.out.println(Math.min(this.fanout, view_size));
-					this.network.sendGossip(gossip, this.id, view.get(random));
-				});
+//		// send the gossip message to random selected nodes
+//		ThreadLocalRandom.current().ints(0, view_size).distinct().limit(Math.min(this.fanout, view_size))
+//			.forEach(random -> {
+//				this.router.sendGossip(gossip, this.id, view.get(random));
+//			});
+
+		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+		for (int i = 0; i < fanout && i < view_size; i++) {
+			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+			Integer destinationId = this.view.get(rnd);
+			if (selected_nodes.add(destinationId)){
+				Context<Object> context = ContextUtils.getContext(this);
+				Network<Object> network = (Network<Object>)context.getProjection("network");
+				Node destination = this.router.locateNode(destinationId);
+				RepastEdge<Object> edge = network.addEdge(this, destination);
+				System.out.println("Edge_source = " + ((Node)edge.getSource()).id);
+				System.out.println("Edge_target = " + ((Node)edge.getTarget()).id);
+				
+				router.sendGossip(gossip, this.id, view.get(rnd));
+				
+				network.removeEdge(edge);
+			} else {
+				while (!selected_nodes.add(this.view.get(rnd))) {
+					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+					destinationId = this.view.get(rnd);
+					Context<Object> context = ContextUtils.getContext(this);
+					Network<Object> network = (Network<Object>)context.getProjection("network");
+					Node destination = this.router.locateNode(destinationId);
+					RepastEdge<Object> edge = network.addEdge(this, destination);
+					System.out.println("Edge_source = " + ((Node)edge.getSource()).id);
+					System.out.println("Edge_target = " + ((Node)edge.getTarget()).id);
+					
+					router.sendGossip(gossip, this.id, view.get(rnd));
+					
+					network.removeEdge(edge);
+				}
+			}
+		}
 
 		this.events.clear();
 
@@ -229,7 +267,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())) {
 			// ask event.id from sender
-			Event e = network.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
+			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
@@ -263,13 +301,13 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
-		Event event = network.requestEvent(eventId, this.id, view.get(rnd));
+		Event event = router.requestEvent(eventId, this.id, view.get(rnd));
 
 		if (event == null) {
 			// ask event directly to the source
 			String[] parts = eventId.split("_");
 			int eventCreator = Integer.parseInt(parts[0]);
-			event = network.requestEventToOriginator(eventId, this.id, eventCreator);
+			event = router.requestEventToOriginator(eventId, this.id, eventCreator);
 			if (event != null) {
 				this.events.add(event);
 				// LPB-DELIVER(event)

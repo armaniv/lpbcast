@@ -3,6 +3,8 @@ package lpbcast;
 import java.util.HashMap;
 
 import repast.simphony.context.Context;
+import repast.simphony.context.space.continuous.ContinuousSpaceFactory;
+import repast.simphony.context.space.continuous.ContinuousSpaceFactoryFinder;
 import repast.simphony.context.space.graph.NetworkBuilder;
 import repast.simphony.context.space.grid.GridFactory;
 import repast.simphony.context.space.grid.GridFactoryFinder;
@@ -10,6 +12,9 @@ import repast.simphony.dataLoader.ContextBuilder;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.parameter.Parameters;
 import repast.simphony.random.RandomHelper;
+import repast.simphony.space.continuous.ContinuousSpace;
+import repast.simphony.space.continuous.NdPoint;
+import repast.simphony.space.continuous.RandomCartesianAdder;
 import repast.simphony.space.grid.Grid;
 import repast.simphony.space.grid.GridBuilderParameters;
 import repast.simphony.space.grid.SimpleGridAdder;
@@ -23,8 +28,6 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		// --- Lightweight Probabilistic Broadcast (P. Th. Eugster et al)
 		
 		context.setId("lpbcast");
-
-		GridFactory gridFactory = GridFactoryFinder.createGridFactory(null);
 
 		// get the value for the parameters
 		Parameters params = RunEnvironment.getInstance().getParameters();
@@ -41,22 +44,21 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int churn_rate = params.getInteger("churn_rate");
 		
 		// create a grid
+		GridFactory gridFactory = GridFactoryFinder.createGridFactory(null);
 		Grid<Object> grid = gridFactory.createGrid("grid", context, new GridBuilderParameters<Object>(
 				new WrapAroundBorders(), new SimpleGridAdder<Object>(), false, grid_size, grid_size));
 		
-		
 		// Network to show edges between nodes which means 
 		// that a message between them has been sent
-		NetworkBuilder<Object> networkBuilder = new NetworkBuilder<Object>("messages network", context, true);
+		NetworkBuilder<Object> networkBuilder = new NetworkBuilder<Object>("network", context, true);
 		networkBuilder.buildNetwork();
+		
 		// this is the actual entity which manages communication
-		MessagesNetwork network = new MessagesNetwork();
-		context.add(network);
+		Router router = new Router();
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		
-		// populate the grid with at most one Node per cell
 		for (int i = 0; i < node_count; i++) {
-			Node node = new Node(grid, i, network, max_l, max_m, fanout, initial_neighbors, round_k, round_r);
+			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r);
 			nodes.put(i, node);
 			context.add(node);
 			int x = RandomHelper.nextIntFromTo(0, grid_size - 1);
@@ -67,8 +69,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 			}
 		}
 		
-		network.setNodes(nodes);
-
+		router.setNodes(nodes);
 		return context;
 	}
 

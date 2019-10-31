@@ -13,4 +13,8 @@ public class Event {
 	public String getId() {
 		return this.id;
 	}
+	
+	public Integer getCreator() {
+		return this.creator;
+	}
 }
