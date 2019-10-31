@@ -30,12 +30,12 @@ public class Node {
 
 	// --- node's variables
 	private int id; 						// the node's identifier
-	private ArrayList<Node> view; 			// the node's view
+	private ArrayList<Integer> view; 			// the node's view
 	private ArrayList<Event> events; 		// the node's events list
 	private ArrayList<Event> myEvents; 		// the events generates by this node
 	private ArrayList<String> eventIds; 	// the node's digest events list
-	private ArrayList<Node> subs; 			// the node's subscriptions list
-	private ArrayList<Node> unSubs; 		// the node's un-subscriptions list
+	private ArrayList<Integer> subs; 			// the node's subscriptions list
+	private ArrayList<Integer> unSubs; 		// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; // the message to retrieve list
 	private int round; 						// the node's round
 	private int eventIdCounter; 			// count how many events a node created
@@ -69,7 +69,7 @@ public class Node {
 	public void initialize() {
 		// initially a node knows only its neighbor
 		// neighbors are some nodes that are somewhere around this node
-		ArrayList<Node> neighbors = new ArrayList<Node>();
+		ArrayList<Integer> neighbors = new ArrayList<Integer>();
 		int neigborhood_extent = 1;
 		while (neighbors.size() < this.initial_neighbors) {
 			GridPoint pt = grid.getLocation(this);
@@ -82,7 +82,7 @@ public class Node {
 				if (o instanceof Node && neighbors.size() < this.initial_neighbors) {
 					Node node = (Node) o;
 					if (!neighbors.contains(node)) {
-						neighbors.add(node);
+						neighbors.add(node.getId());
 					}
 				}
 			}
@@ -99,7 +99,7 @@ public class Node {
 
 		// add self to sub
 		if (!this.subs.contains(this)) {
-			this.subs.add(this);
+			this.subs.add(this.id);
 		}
 
 		// create a new gossip message
@@ -110,7 +110,7 @@ public class Node {
 		// send the gossip message to random selected nodes
 		ThreadLocalRandom.current().ints(0, view_size).distinct().limit(Math.min(this.fanout, view_size))
 				.forEach(random -> {
-					this.network.sendGossip(gossip, view.get(random).getId());
+					this.network.sendGossip(gossip, view.get(random));
 				});
 
 		this.events.clear();
@@ -118,7 +118,7 @@ public class Node {
 		// with a certain probability generate a new event
 		// TODO: if supernode says me to create an event, do that
 		if (round == 1 && id == 1) {
-			Event event = new Event(this, eventIdCounter);
+			Event event = new Event(this.id, eventIdCounter);
 			this.myEvents.add(event);
 			this.events.add(event);
 			this.eventIds.add(event.getId());
@@ -134,7 +134,7 @@ public class Node {
 			this.view.removeAll(gossip.getUnSub());
 			this.subs.removeAll(gossip.getUnSub());
 
-			for (Node uns : gossip.getUnSub()) {
+			for (Integer uns : gossip.getUnSub()) {
 				if (!this.unSubs.contains(uns)) {
 					this.unSubs.add(uns);
 				}
@@ -146,8 +146,8 @@ public class Node {
 			}
 
 			// ---- phase 2
-			for (Node n_sub : gossip.getSub()) {
-				if (n_sub != this) {
+			for (Integer n_sub : gossip.getSub()) {
+				if (n_sub != this.id) {
 
 					if (!this.view.contains(n_sub)) {
 						this.view.add(n_sub);
@@ -161,7 +161,7 @@ public class Node {
 
 			while (this.view.size() > this.max_l) {
 				int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
-				Node node_removed = this.view.remove(rnd);
+				Integer node_removed = this.view.remove(rnd);
 
 				if (!this.subs.contains(node_removed)) {
 					this.subs.add(node_removed);
@@ -260,7 +260,7 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
-		Event event = network.requestEvent(eventId, view.get(rnd).getId());
+		Event event = network.requestEvent(eventId, view.get(rnd));
 
 		if (event == null) {
 			// ask event directly to the source
