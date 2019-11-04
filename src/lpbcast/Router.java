@@ -2,12 +2,6 @@ package lpbcast;
 
 import java.util.HashMap;
 
-import repast.simphony.context.Context;
-import repast.simphony.context.space.graph.NetworkBuilder;
-import repast.simphony.space.graph.Network;
-import repast.simphony.space.graph.RepastEdge;
-import repast.simphony.util.ContextUtils;
-
 public class Router {
 	private HashMap<Integer, Node> nodes;
 	

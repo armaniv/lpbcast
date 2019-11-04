@@ -16,6 +16,8 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 		Node node = (Node)o;
 		if (node.getEventIdsSize()>0)	{
 			return Color.GREEN;
+		}else if (node.getCrashed()) {
+			return Color.RED;
 		}
 		else
 			return Color.BLACK;
