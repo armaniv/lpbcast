@@ -4,18 +4,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+
+import lpbcast.SchedulableActions.*;
 
 import repast.simphony.context.Context;
 import repast.simphony.engine.environment.RunEnvironment;
-import repast.simphony.engine.schedule.IAction;
 import repast.simphony.engine.schedule.ISchedule;
 import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.query.space.grid.GridCell;
 import repast.simphony.query.space.grid.GridCellNgh;
 import repast.simphony.random.RandomHelper;
-import repast.simphony.space.continuous.ContinuousSpace;
 import repast.simphony.space.graph.Network;
 import repast.simphony.space.graph.RepastEdge;
 import repast.simphony.space.grid.Grid;
@@ -25,9 +24,9 @@ import repast.simphony.util.ContextUtils;
 public class Node {
 
 	// --- node's 'configuration' parameter
-	private Router router; 				// object that deals with localization and transfer of messages
+	private Router router; 					// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 				// the context's grid
-	private Boolean crashed; 				// signal that the node is failed
+	private NodeState nodeState; 			// the node's state
 	private int max_l; 						// the maximum view sizes
 	private int max_m; 						// the maximum buffers size
 	private int fanout; 					// the num of processes to which deliver a message (every T)
@@ -55,7 +54,7 @@ public class Node {
 			int round_k, int round_r, int long_ago, boolean age_purging) {
 		this.router = router;
 		this.grid = grid;
-		this.crashed = false;
+		this.nodeState = NodeState.INIT;
 		this.max_l = max_l;
 		this.max_m = max_m;
 		this.fanout = fanout;
@@ -109,7 +108,7 @@ public class Node {
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
 		
-		if(!this.crashed) {
+		if(this.nodeState != NodeState.CRASHED) {
 			round++;
 			
 			ArrayList<Event> events = new ArrayList<Event>();
@@ -167,6 +166,7 @@ public class Node {
 
 	
 	public void broadcast() {
+		this.nodeState = NodeState.EMITTER;
 		Event event = new Event(this.id, eventIdCounter);
 		this.myEvents.add(event);
 		this.events.add(event);
@@ -202,7 +202,7 @@ public class Node {
 	
 	
 	public void receive(Message gossip) {
-		if (!this.crashed) {
+		if (this.nodeState != NodeState.CRASHED) {
 
 			// ---- phase 1
 			this.view.removeAll(gossip.getUnSubs());
@@ -277,25 +277,11 @@ public class Node {
 					if (!this.retrieveBuf.contains(elem)) {
 						this.retrieveBuf.add(elem);
 
-						// schedule the retrievement of these events
-						class RetrieveAction implements IAction {
-							private Element element;
-
-							public RetrieveAction(Element element) {
-								this.element = element;
-							}
-
-							public void execute() {
-								requestEventFromSender(element);
-							}
-						}
-						;
-
 						// schedule retrievement
 						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 						ScheduleParameters scheduleParameters = ScheduleParameters
 								.createOneTime(schedule.getTickCount() + this.round_k);
-						schedule.schedule(scheduleParameters, new RetrieveAction(elem));
+						schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
 					}
 				}
 			}
@@ -322,23 +308,9 @@ public class Node {
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
-				class RetrieveAction implements IAction {
-					private Element element;
-
-					public RetrieveAction(Element element) {
-						this.element = element;
-					}
-
-					public void execute() {
-						requestEventFromRandom(element);
-					}
-				}
-				;
-
-				// schedule retrievement
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + this.round_r);
-				schedule.schedule(scheduleParameters, new RetrieveAction(element));
+				schedule.schedule(scheduleParameters, new RetrieveFromRandom(element, this));
 			} else {
 				this.events.add(e);
 				this.eventIds.add(e.getId());
@@ -404,6 +376,10 @@ public class Node {
 
 	public boolean simulateCrashed() {
 		return this.crashed == true;
+	}
+	
+	public boolean getCrashed() {
+		return this.crashed;
 	}
 
 }
