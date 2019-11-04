@@ -11,14 +11,14 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 	@Override
 	public Color getColor(Object o) {
 		if (!(o instanceof Node)) {
-			return Color.YELLOW; 
+			return Color.BLACK; 
 		}
 		Node node = (Node)o;
 		if (node.getEventIdsSize()>0)	{
-			return Color.RED;
+			return Color.GREEN;
 		}
 		else
-			return Color.GREEN;
+			return Color.BLACK;
 	}
 	
 	public VSpatial getVSpatial(Object agent, VSpatial spatial) {

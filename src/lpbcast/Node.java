@@ -45,7 +45,8 @@ public class Node {
 	private ArrayList<Element> retrieveBuf; // the message to retrieve list
 	private int round; 						// the node's round
 	private int eventIdCounter; 			// count how many events a node created
-	
+	private Context<Object> context;
+	private Network<Object> network;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r) {
@@ -102,68 +103,63 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
+		
+		if(!this.crashed) {
+			round++;
+	
+			// add self to sub
+			if (!this.subs.contains(this.getId())) {
+				this.subs.add(this.id);
+			}
+	
+			// create a new gossip message
+			Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
+	
+			int view_size = this.view.size();
+	
+			context = ContextUtils.getContext(this);
+			network = (Network<Object>)context.getProjection("network");
+	
+			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+			for (int i = 0; i < fanout && i < view_size; i++) {
+				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+				Integer destinationId = this.view.get(rnd);				
+				if (selected_nodes.add(destinationId)){
 
-		round++;
-
-		// add self to sub
-		if (!this.subs.contains(this.getId())) {
-			this.subs.add(this.id);
-		}
-
-		// create a new gossip message
-		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
-
-		int view_size = this.view.size();
-
-//		// send the gossip message to random selected nodes
-//		ThreadLocalRandom.current().ints(0, view_size).distinct().limit(Math.min(this.fanout, view_size))
-//			.forEach(random -> {
-//				this.router.sendGossip(gossip, this.id, view.get(random));
-//			});
-
-		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
-		for (int i = 0; i < fanout && i < view_size; i++) {
-			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-			Integer destinationId = this.view.get(rnd);
-			if (selected_nodes.add(destinationId)){
-				Context<Object> context = ContextUtils.getContext(this);
-				Network<Object> network = (Network<Object>)context.getProjection("network");
-				Node destination = this.router.locateNode(destinationId);
-				RepastEdge<Object> edge = network.addEdge(this, destination);
-				System.out.println("Edge_source = " + ((Node)edge.getSource()).id);
-				System.out.println("Edge_target = " + ((Node)edge.getTarget()).id);
-				
-				router.sendGossip(gossip, this.id, view.get(rnd));
-				
-				network.removeEdge(edge);
-			} else {
-				while (!selected_nodes.add(this.view.get(rnd))) {
-					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-					destinationId = this.view.get(rnd);
-					Context<Object> context = ContextUtils.getContext(this);
-					Network<Object> network = (Network<Object>)context.getProjection("network");
+					for(RepastEdge<Object> edge : network.getOutEdges(this)) {
+						network.removeEdge(edge);
+					}
 					Node destination = this.router.locateNode(destinationId);
-					RepastEdge<Object> edge = network.addEdge(this, destination);
-					System.out.println("Edge_source = " + ((Node)edge.getSource()).id);
-					System.out.println("Edge_target = " + ((Node)edge.getTarget()).id);
-					
+					network.addEdge(this, destination);
 					router.sendGossip(gossip, this.id, view.get(rnd));
 					
-					network.removeEdge(edge);
+				} else {
+					while (!selected_nodes.add(this.view.get(rnd))) {
+						rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+						destinationId = this.view.get(rnd);
+						
+						for(RepastEdge<Object> edge : network.getOutEdges(this)) {
+							network.removeEdge(edge);
+						}
+						Node destination = this.router.locateNode(destinationId);
+						network.addEdge(this, destination);
+						router.sendGossip(gossip, this.id, view.get(rnd));
+					}
 				}
 			}
-		}
-
-		this.events.clear();
-
-		// with a certain probability generate a new event
-		// TODO: if supernode says me to create an event, do that
-		if (round == 1 && id == 1) {
-			Event event = new Event(this.id, eventIdCounter);
-			this.myEvents.add(event);
-			this.events.add(event);
-			this.eventIds.add(event.getId());
-			eventIdCounter++;
+			
+			selected_nodes.clear();
+			this.events.clear();
+	
+			// with a certain probability generate a new event
+			// TODO: if supernode says me to create an event, do that
+			if (round == 1 && id == 1) {
+				Event event = new Event(this.id, eventIdCounter);
+				this.myEvents.add(event);
+				this.events.add(event);
+				this.eventIds.add(event.getId());
+				eventIdCounter++;
+			}
 		}
 	}
 
