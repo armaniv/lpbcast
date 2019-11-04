@@ -20,7 +20,7 @@ public class Router {
 	
 	// Send a gossip message to a destination node
 	public void sendGossip(Message gossip, Integer sourceNodeId, Integer destinationNodeId) {
-		nodes.get(destinationNodeId).receiveMessage(gossip);
+		nodes.get(destinationNodeId).receive(gossip);
 	}
 	
 	// Request an event to a node that might be different from the originator

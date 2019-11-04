@@ -150,21 +150,20 @@ public class Node {
 			
 			selected_nodes.clear();
 			this.events.clear();
-	
-			// with a certain probability generate a new event
-			// TODO: if supernode says me to create an event, do that
-			if (round == 1 && id == 1) {
-				Event event = new Event(this.id, eventIdCounter);
-				this.myEvents.add(event);
-				this.events.add(event);
-				this.eventIds.add(event.getId());
-				eventIdCounter++;
-			}
 		}
 	}
 
-	public void receiveMessage(Message gossip) {
-
+	
+	public void broadcast() {
+		Event event = new Event(this.id, eventIdCounter);
+		this.myEvents.add(event);
+		this.events.add(event);
+		this.eventIds.add(event.getId());
+		eventIdCounter++;
+	}
+	
+	
+	public void receive(Message gossip) {
 		if (!this.crashed) {
 
 			// ---- phase 1
