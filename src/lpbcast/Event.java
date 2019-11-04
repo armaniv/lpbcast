@@ -1,20 +1,56 @@
 package lpbcast;
 
-public class Event {
+public class Event implements Comparable {
 
-	private Integer creator; 			// the Event creator
+	private Integer creatorId; 			// the Event creator
+	private Integer eventId;
 	private String id; 			// the event's digest (randomly computed)
+	private int age;
 
-	public Event(Integer creator, int eventCounter) {
-		this.creator = creator;
-		this.id = creator + "_" + eventCounter;
+	public Event(Integer creatorId, int eventCounter) {
+		this.creatorId = creatorId;
+		this.eventId = eventCounter;
+		this.id = creatorId + "_" + eventCounter;
+		this.age = 0;
 	}
 
 	public String getId() {
 		return this.id;
 	}
 	
-	public Integer getCreator() {
-		return this.creator;
+	public Integer getCreatorId() {
+		return this.creatorId;
+	}
+	
+	public int getAge() {
+		return this.age;
+	}
+	
+	public void incrementAge() {
+		this.age++;
+	}
+	
+	public void updateAge(int age) {
+		this.age = age;
+	}
+	
+	public int getEventId() {
+		return this.eventId;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		Event e = null;
+		if (!(o instanceof Event)) {
+			return -1;
+		}
+		e = (Event) o;
+		if (this.eventId > e.getEventId()){
+			return 1;
+		}else if(this.eventId == e.getEventId()) {
+			return 0;
+		}else {
+			return -1;
+		}
 	}
 }

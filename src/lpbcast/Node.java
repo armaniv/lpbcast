@@ -1,6 +1,7 @@
 package lpbcast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,6 +34,7 @@ public class Node {
 	private int initial_neighbors; 			// size of initial connections (neighbors) of a node
 	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
 	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
+	private int long_ago;
 
 	// --- node's variables
 	private int id; 						// the node's identifier
@@ -47,9 +49,10 @@ public class Node {
 	private int eventIdCounter; 			// count how many events a node created
 	private Context<Object> context;
 	private Network<Object> network;
+	private boolean age_purging;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r) {
+			int round_k, int round_r, int long_ago, boolean age_purging) {
 		this.router = router;
 		this.grid = grid;
 		this.crashed = false;
@@ -59,6 +62,8 @@ public class Node {
 		this.initial_neighbors = initial_neighbors;
 		this.round_k = round_k;
 		this.round_r = round_r;
+		this.long_ago = long_ago;
+		this.age_purging = age_purging;
 
 		this.id = id;
 		this.view = new ArrayList<>();
@@ -106,6 +111,13 @@ public class Node {
 		
 		if(!this.crashed) {
 			round++;
+			
+			ArrayList<Event> events = new ArrayList<Event>();
+			for(Event e : this.events) {
+				e.incrementAge();
+				events.add(e);
+			}
+			this.events = events;
 	
 			// add self to sub
 			if (!this.subs.contains(this.getId())) {
@@ -160,6 +172,32 @@ public class Node {
 		this.events.add(event);
 		this.eventIds.add(event.getId());
 		eventIdCounter++;
+		if (this.age_purging) {
+			removeOldestNotifications();
+		}		
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void removeOldestNotifications() {
+		// out of date purging
+		while (this.events.size() > this.max_m) {
+			for (Event e1 : this.events) {
+				for (Event e2 : this.events) {
+					if (e1.getCreatorId() == e2.getCreatorId() && e1.getEventId() - e2.getEventId() > this.long_ago) {
+						this.events.remove(e1);
+					}
+				}
+			}
+		}
+		// by age purging
+		while (this.events.size() > this.max_m) {
+			int maxAge = Collections.max(this.events).getAge();
+			for (Event e : this.events) {
+				if (e.getAge() >= maxAge) {
+					this.events.remove(e);
+				}
+			}
+		}
 	}
 	
 	
@@ -213,9 +251,24 @@ public class Node {
 			for (Event e : gossip.getEvents()) {
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
+					// LPB-DELIVER(e)
 					this.eventIds.add(e.getId());
 				}
 			}
+			
+			if (this.age_purging) {
+				for (Event e1 : gossip.getEvents()) {
+					for (Event e2 : this.events) {
+						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
+							e2.updateAge(e1.getAge());
+							this.events.remove(e1);
+							this.events.add(e2);
+						}
+					}
+				}
+				removeOldestNotifications();
+			}	
+
 
 			for (String dig : gossip.getEventIds()) {
 				if (!this.eventIds.contains(dig)) {
@@ -252,10 +305,13 @@ public class Node {
 				this.eventIds.remove(rnd);
 			}
 
-			while (this.events.size() > this.max_m) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
-				this.events.remove(rnd);
+			if (!this.age_purging) {
+				while (this.events.size() > this.max_m) {
+					int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
+					this.events.remove(rnd);
+				}
 			}
+
 		}
 	}
 
