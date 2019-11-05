@@ -39,6 +39,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int churn_rate = params.getInteger("churn_rate");
 		int unsub_rate = params.getInteger("unsub_rate");
 		boolean age_purging = params.getBoolean("age_purging");
+		boolean frequency_purging = Boolean.getBoolean(params.getString("frequency_purging"));
 		
 		// create a grid
 		GridFactory gridFactory = GridFactoryFinder.createGridFactory(null);
@@ -59,7 +60,8 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		for (int i = 0; i < node_count; i++) {
 			//Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, age_purging);
-			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, true, true, 1);
+			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, 
+					round_k, round_r, age_purging, frequency_purging, 1);
 			nodes.put(i, node);
 			context.add(node);
 			appNode.addNode(node);
