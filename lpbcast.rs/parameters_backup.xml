@@ -12,6 +12,13 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="age_purging" displayName="Age purging opt" type="boolean" 
+						defaultValue="true" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
+									values="true false "
+						
+		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
 						defaultValue="1" 
 						isReadOnly="false" 

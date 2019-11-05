@@ -34,29 +34,29 @@ public class Node {
 	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
 	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
 	private boolean age_purging;			// if true enable the event purging optimization
-	private int long_ago;					// parameter of event purging optimization
+	private int long_ago;					// parameter of event purging optimization and unsub
 	private Context<Object> context;
 	private Network<Object> network;
 	private boolean newEventThisRound;
 	
 	// --- node's variables
-	private int id; 						// the node's identifier
-	private ArrayList<Integer> view; 		// the node's view
-	private ArrayList<Event> events; 		// the node's events list
-	private ArrayList<Event> myEvents; 		// the events generates by this node
-	private ArrayList<String> eventIds; 	// the node's digest events list
-	private ArrayList<Integer> subs; 		// the node's subscriptions list
-	private ArrayList<Integer> unSubs; 		// the node's un-subscriptions list
-	private ArrayList<Element> retrieveBuf; // the message to retrieve list
-	private int round; 						// the node's round
-	private int eventIdCounter; 			// count how many events a node created
+	private int id; 							// the node's identifier
+	private ArrayList<Integer> view; 			// the node's view
+	private ArrayList<Event> events; 			// the node's events list
+	private ArrayList<Event> myEvents; 			// the events generates by this node
+	private ArrayList<String> eventIds; 		// the node's digest events list
+	private ArrayList<Integer> subs; 			// the node's subscriptions list
+	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
+	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
+	private int round; 							// the node's round
+	private int eventIdCounter; 				// count how many events a node created
 	
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging) {
 		this.router = router;
 		this.grid = grid;
-		this.nodeState = NodeState.INIT;
+		this.nodeState = NodeState.SUB;
 		this.max_l = max_l;
 		this.max_m = max_m;
 		this.fanout = fanout;
@@ -64,7 +64,7 @@ public class Node {
 		this.round_k = round_k;
 		this.round_r = round_r;
 		this.age_purging = age_purging;
-		this.long_ago = 10;
+		this.long_ago = 7;
 		
 		this.id = id;
 		this.view = new ArrayList<>();
@@ -109,9 +109,9 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
-		if(this.nodeState != NodeState.CRASHED) {
-			round++;
-			
+		round++;
+		
+		if(this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {	
 			ArrayList<Event> events = new ArrayList<Event>();
 			for(Event e : this.events) {
 				e.incrementAge();
@@ -160,22 +160,19 @@ public class Node {
 				}
 			}
 			
-			selected_nodes.clear();
 			this.events.clear();
 		}
 	}
 
 	
 	public void broadcast() {
-		if (this.nodeState != NodeState.CRASHED) {
-			Event event = new Event(this.id, eventIdCounter);
-			this.myEvents.add(event);
-			this.events.add(event);
-			this.eventIds.add(event.getId());
-			eventIdCounter++;
-			if (this.age_purging) {
-				removeOldestNotifications();
-			}
+		Event event = new Event(this.id, eventIdCounter);
+		this.myEvents.add(event);
+		this.events.add(event);
+		this.eventIds.add(event.getId());
+		eventIdCounter++;
+		if (this.age_purging) {
+			removeOldestNotifications();
 		}
 	}
 	
@@ -211,13 +208,27 @@ public class Node {
 	}
 	
 	public void receive(Message gossip) {
-		if (this.nodeState != NodeState.CRASHED) {
+		if(this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
+			// remove obsolete unsubs
+			ArrayList<Unsubscription> old_unsb = new ArrayList<>();
+			for(Unsubscription unsub : gossip.getUnSubs())
+			{
+				if(this.round  > (unsub.getAge() + this.long_ago)) {
+					old_unsb.add(unsub);
+				}
+			}
+			gossip.getUnSubs().removeAll(old_unsb);
+			this.unSubs.removeAll(old_unsb);
+			
 			// ---- phase 1
-			this.view.removeAll(gossip.getUnSubs());
-			this.subs.removeAll(gossip.getUnSubs());
+			for(Unsubscription unsub : gossip.getUnSubs())
+			{
+				this.view.removeIf(v -> v == unsub.getNodeId());
+				this.subs.removeIf(s -> s == unsub.getNodeId());
+			}
 
-			for (Integer uns : gossip.getUnSubs()) {
+			for (Unsubscription uns : gossip.getUnSubs()) {
 				if (!this.unSubs.contains(uns)) {
 					this.unSubs.add(uns);
 				}
@@ -379,6 +390,7 @@ public class Node {
 		}
 		return null;
 	}
+	
 
 	public int getEventIdsSize() {
 		return this.eventIds.size();
@@ -388,16 +400,56 @@ public class Node {
 		return this.id;
 	}
 
-	public void recover() {
-		this.nodeState = NodeState.INIT;
-	}
-
-	public void setCrashed() {
-		this.nodeState = NodeState.CRASHED;
+	// ----------- TODO: maybe discuss about it
+	public void subscribe() {
+		this.nodeState = NodeState.SUB;
+		// simply call gossip emission (subs will contain only self,
+		// events, eventIds, unSubs and retrieveBuf are all empty)
+		gossipEmission();
 	}
 	
-	public boolean getCrashed() {
-		return this.nodeState == NodeState.CRASHED;
+	public void unSubscribe() {
+		this.nodeState = NodeState.UNSUB;
+		// simulate loosing interest 
+		this.events.clear();
+		this.eventIds.clear();
+		this.subs.clear();
+		this.unSubs.clear();
+		this.retrieveBuf.clear();
+		unsubEmission();
+	}
+	
+	public void unsubEmission() {
+		Unsubscription unsub = new Unsubscription(this.id, this.round);
+		this.unSubs.add(unsub);
+		
+		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
+		int view_size = this.view.size();
+
+		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+		for (int i = 0; i < fanout && i < view_size; i++) {
+			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+			Integer destinationId = this.view.get(rnd);				
+			if (selected_nodes.add(destinationId)){
+				router.sendGossip(gossip, this.id, view.get(rnd));
+				
+			} else {
+				while (!selected_nodes.add(this.view.get(rnd))) {
+					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
+					router.sendGossip(gossip, this.id, view.get(rnd));
+				}
+			}
+		}
+	}
+	
+	public void setCrashed() {
+		this.nodeState = NodeState.CRASHED;
+		// loose information about participants and events
+		this.events.clear();
+		this.eventIds.clear();
+		this.subs.clear();
+		this.unSubs.clear();
+		this.retrieveBuf.clear();
 	}
 	
 	public void setNewEventThisRoundet(boolean value) {
@@ -408,5 +460,7 @@ public class Node {
 		return this.newEventThisRound;
 	}
 	
-
+	public NodeState getNodeState() {
+		return this.nodeState;
+	}
 }

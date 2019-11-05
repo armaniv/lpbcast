@@ -35,15 +35,15 @@ public class SchedulableActions {
 	}
 	
 	
-	public static class RecoverFromFailure implements IAction {
+	public static class RecoverAndSubscribe implements IAction {
 		private Node node;
 
-		public RecoverFromFailure(Node node) {
+		public RecoverAndSubscribe(Node node) {
 			this.node = node;
 		}
 
 		public void execute() {
-			node.recover();
+			node.subscribe();
 		}
 	}
 }
