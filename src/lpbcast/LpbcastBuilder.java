@@ -59,7 +59,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		for (int i = 0; i < node_count; i++) {
 			//Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, age_purging);
-			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, true);
+			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, true, true, 1);
 			nodes.put(i, node);
 			context.add(node);
 			appNode.addNode(node);

@@ -33,7 +33,9 @@ public class Node {
 	private int initial_neighbors; 			// size of initial connections (neighbors) of a node
 	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
 	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
-	private boolean age_purging;			// if true enable the event purging optimization
+	private boolean age_purging;			// if true enables the event purging optimization
+	private boolean membership_purging;		// if true enables the membership purging optimization
+	private double membership_K;			// 0 < K <= 1 is the weight of the avg used in SELECT_PROCESS()
 	private int long_ago;					// parameter of event purging optimization and unsub
 	private Context<Object> context;
 	private Network<Object> network;
@@ -41,11 +43,11 @@ public class Node {
 	
 	// --- node's variables
 	private int id; 							// the node's identifier
-	private ArrayList<Integer> view; 			// the node's view
+	private ArrayList<Membership> view; 		// the node's view
 	private ArrayList<Event> events; 			// the node's events list
 	private ArrayList<Event> myEvents; 			// the events generates by this node
 	private ArrayList<String> eventIds; 		// the node's digest events list
-	private ArrayList<Integer> subs; 			// the node's subscriptions list
+	private ArrayList<Membership> subs; 			// the node's subscriptions list
 	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
 	private int round; 							// the node's round
@@ -53,7 +55,7 @@ public class Node {
 	
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r, boolean age_purging) {
+			int round_k, int round_r, boolean age_purging, boolean membership_purging, double membership_K) {
 		this.router = router;
 		this.grid = grid;
 		this.nodeState = NodeState.SUB;
@@ -64,6 +66,8 @@ public class Node {
 		this.round_k = round_k;
 		this.round_r = round_r;
 		this.age_purging = age_purging;
+		this.membership_purging = membership_purging;
+		this.membership_K = membership_K;
 		this.long_ago = 7;
 		
 		this.id = id;
@@ -102,8 +106,10 @@ public class Node {
 			}
 			neigborhood_extent++;
 		}
-		view.addAll(neighbors);
-		subs.addAll(neighbors);
+		for (Integer neighbor : neighbors) {
+			view.add(new Membership(neighbor,  0));
+			subs.add(new Membership(neighbor,  0));
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -120,8 +126,9 @@ public class Node {
 			this.events = events;
 	
 			// add self to sub
-			if (!this.subs.contains(this.getId())) {
-				this.subs.add(this.id);
+			Membership me = new Membership(this.getId(), 0);
+			if (!this.subs.contains(me)) {
+				this.subs.add(me);
 			}
 	
 			// create a new gossip message
@@ -135,7 +142,7 @@ public class Node {
 			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
 			for (int i = 0; i < fanout && i < view_size; i++) {
 				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-				Integer destinationId = this.view.get(rnd);				
+				Integer destinationId = this.view.get(rnd).getNodeId();				
 				if (selected_nodes.add(destinationId)){
 
 					for(RepastEdge<Object> edge : network.getOutEdges(this)) {
@@ -143,19 +150,19 @@ public class Node {
 					}
 					Node destination = this.router.locateNode(destinationId);
 					network.addEdge(this, destination);
-					router.sendGossip(gossip, this.id, view.get(rnd));
+					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 					
 				} else {
-					while (!selected_nodes.add(this.view.get(rnd))) {
+					while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
 						rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-						destinationId = this.view.get(rnd);
+						destinationId = this.view.get(rnd).getNodeId();
 						
 						for(RepastEdge<Object> edge : network.getOutEdges(this)) {
 							network.removeEdge(edge);
 						}
 						Node destination = this.router.locateNode(destinationId);
 						network.addEdge(this, destination);
-						router.sendGossip(gossip, this.id, view.get(rnd));
+						router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 					}
 				}
 			}
@@ -173,6 +180,173 @@ public class Node {
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
+		}
+	}
+	
+	public void receive(Message gossip) {
+		if(this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
+
+			// remove obsolete unsubs
+			ArrayList<Unsubscription> old_unsb = new ArrayList<>();
+			for(Unsubscription unsub : gossip.getUnSubs())
+			{
+				if(this.round  > (unsub.getAge() + this.long_ago)) {
+					old_unsb.add(unsub);
+				}
+			}
+			gossip.getUnSubs().removeAll(old_unsb);
+			this.unSubs.removeAll(old_unsb);
+			
+			// ---- phase 1
+			for(Unsubscription unsub : gossip.getUnSubs())
+			{
+				this.view.removeIf(v -> v.getNodeId() == unsub.getNodeId());
+				this.subs.removeIf(s -> s.getNodeId() == unsub.getNodeId());
+			}
+
+			for (Unsubscription uns : gossip.getUnSubs()) {
+				if (!this.unSubs.contains(uns)) {
+					this.unSubs.add(uns);
+				}
+			}
+
+			while (this.unSubs.size() > this.max_m) {
+				int rnd = RandomHelper.nextIntFromTo(0, this.unSubs.size() - 1);
+				this.unSubs.remove(rnd);
+			}
+
+			// ---- phase 2
+			for (Membership n_sub : gossip.getSubs()) {
+				if (n_sub.getNodeId() != this.id) {
+
+					if (!this.view.contains(n_sub)) {
+						this.view.add(n_sub);
+
+						if (!this.subs.contains(n_sub)) {
+							this.subs.add(n_sub);
+						}
+					}
+				}
+			}
+
+			if (this.membership_purging) {
+				ArrayList<Membership> gossipSubs = gossip.getSubs();
+				for (int j=0; j<gossipSubs.size(); j++) {
+					Membership m = gossipSubs.get(j);
+					if (this.view.contains(m)) {
+						int i = this.view.indexOf(m);
+						Membership n = this.view.get(i);
+						if (m.getFrequency() == n.getFrequency()) {
+							n.incrementFrequency();
+							this.view.remove(i);
+							this.view.add(n);
+						}
+					}else {
+						m.incrementFrequency();
+						this.view.add(m);
+					}
+					
+					if (this.subs.contains(m)) { 
+						int i = this.subs.indexOf(m);
+						Membership n = this.subs.get(i);
+						if (m.getFrequency() == n.getFrequency()) {
+							n.incrementFrequency();
+							this.subs.remove(i);
+							this.subs.add(n);
+						}
+					}else {
+						m.incrementFrequency();
+						this.subs.add(m);
+					}
+				}
+				while (this.view.size() > this.max_l) {
+					Membership target = selectProcess(this.view);
+					this.view.remove(target);
+					if (!this.subs.contains(target)) {
+						this.subs.add(target);
+					}
+				}
+				
+				while (this.subs.size() > this.max_m) {
+					Membership target = selectProcess(this.subs);
+					ArrayList<Membership> view = new ArrayList<Membership>(this.view);
+					view.remove(target);
+					this.subs = view;
+				}
+			}else{
+				while (this.view.size() > this.max_l) {
+					int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
+					Membership node_removed = this.view.remove(rnd);
+
+					if (!this.subs.contains(node_removed)) {
+						this.subs.add(node_removed);
+					}
+				}
+
+				while (this.subs.size() > this.max_m) {
+					int rnd = RandomHelper.nextIntFromTo(0, this.subs.size() - 1);
+					this.subs.remove(rnd);
+				}
+			}
+
+			// ---- phase 3
+			for (Event e : gossip.getEvents()) {
+				if (!this.eventIds.contains(e.getId())) {
+					this.events.add(e);
+					// LPB-DELIVER(e)
+					this.eventIds.add(e.getId());
+				}
+			}
+			
+			
+			// if event purging optimization is set to true
+			if (this.age_purging) {		
+				
+				ArrayList<Event> toRemove = new ArrayList<Event>();
+				ArrayList<Event> toAdd = new ArrayList<Event>();
+				for (Event e1 : gossip.getEvents()) {
+					for (Event e2 : this.events) {
+						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
+							e2.updateAge(e1.getAge());
+							toRemove.remove(e1);
+							toAdd.add(e2);
+						}
+					}
+				}
+				
+				this.events.removeAll(toRemove);
+				this.events.addAll(toAdd);
+				removeOldestNotifications();
+			}else{
+				while (this.events.size() > this.max_m) {
+					int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
+					this.events.remove(rnd);
+				}
+			}
+
+
+			for (String dig : gossip.getEventIds()) {
+				if (!this.eventIds.contains(dig)) {
+					Element elem = new Element(dig, this.round, gossip.getSender());
+
+					if (!this.retrieveBuf.contains(elem)) {
+						this.retrieveBuf.add(elem);
+
+						// schedule retrieve
+						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+						ScheduleParameters scheduleParameters = ScheduleParameters
+								.createOneTime(schedule.getTickCount() + this.round_k);
+						schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
+					}
+				}
+			}
+
+			while (this.eventIds.size() > this.max_m) {
+				int rnd = RandomHelper.nextIntFromTo(0, this.eventIds.size() - 1);
+				this.eventIds.remove(rnd);
+			}
+
+
 		}
 	}
 	
@@ -209,131 +383,30 @@ public class Node {
 			tmp.clear();
 		}		
 	}
+
 	
-	public void receive(Message gossip) {
-		if(this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
-
-			// remove obsolete unsubs
-			ArrayList<Unsubscription> old_unsb = new ArrayList<>();
-			for(Unsubscription unsub : gossip.getUnSubs())
-			{
-				if(this.round  > (unsub.getAge() + this.long_ago)) {
-					old_unsb.add(unsub);
-				}
-			}
-			gossip.getUnSubs().removeAll(old_unsb);
-			this.unSubs.removeAll(old_unsb);
-			
-			// ---- phase 1
-			for(Unsubscription unsub : gossip.getUnSubs())
-			{
-				this.view.removeIf(v -> v == unsub.getNodeId());
-				this.subs.removeIf(s -> s == unsub.getNodeId());
-			}
-
-			for (Unsubscription uns : gossip.getUnSubs()) {
-				if (!this.unSubs.contains(uns)) {
-					this.unSubs.add(uns);
-				}
-			}
-
-			while (this.unSubs.size() > this.max_m) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.unSubs.size() - 1);
-				this.unSubs.remove(rnd);
-			}
-
-			// ---- phase 2
-			for (Integer n_sub : gossip.getSubs()) {
-				if (n_sub != this.id) {
-
-					if (!this.view.contains(n_sub)) {
-						this.view.add(n_sub);
-
-						if (!this.subs.contains(n_sub)) {
-							this.subs.add(n_sub);
-						}
-					}
-				}
-			}
-
-			while (this.view.size() > this.max_l) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
-				Integer node_removed = this.view.remove(rnd);
-
-				if (!this.subs.contains(node_removed)) {
-					this.subs.add(node_removed);
-				}
-			}
-
-			while (this.subs.size() > this.max_m) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.subs.size() - 1);
-				this.subs.remove(rnd);
-			}
-
-			// ---- phase 3
-			for (Event e : gossip.getEvents()) {
-				if (!this.eventIds.contains(e.getId())) {
-					this.events.add(e);
-					// LPB-DELIVER(e)
-					this.eventIds.add(e.getId());
-				}
-			}
-			
-			
-			// if event purging optimization is set to true
-			if (this.age_purging) {		
-				
-				ArrayList<Event> toRemove = new ArrayList<Event>();
-				ArrayList<Event> toAdd = new ArrayList<Event>();
-				for (Event e1 : gossip.getEvents()) {
-					for (Event e2 : this.events) {
-						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
-							e2.updateAge(e1.getAge());
-							toRemove.remove(e1);
-							toAdd.add(e2);
-						}
-					}
-				}
-				
-				this.events.removeAll(toRemove);
-				this.events.addAll(toAdd);
-				removeOldestNotifications();
-			}	
-
-
-			for (String dig : gossip.getEventIds()) {
-				if (!this.eventIds.contains(dig)) {
-					Element elem = new Element(dig, this.round, gossip.getSender());
-
-					if (!this.retrieveBuf.contains(elem)) {
-						this.retrieveBuf.add(elem);
-
-						// schedule retrieve
-						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-						ScheduleParameters scheduleParameters = ScheduleParameters
-								.createOneTime(schedule.getTickCount() + this.round_k);
-						schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
-					}
-				}
-			}
-
-			while (this.eventIds.size() > this.max_m) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.eventIds.size() - 1);
-				this.eventIds.remove(rnd);
-			}
-
-			
-			// if event purging optimization is set to false
-			if (!this.age_purging) {
-				while (this.events.size() > this.max_m) {
-					int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
-					this.events.remove(rnd);
-				}
-			}
-
+	public Membership selectProcess(ArrayList<Membership> list) {
+		boolean found = false;
+		Membership target = null;
+		int avg = 0;
+		for (Membership m : list) {
+			avg = avg + m.getFrequency();
 		}
+		avg = avg / list.size();
+		while (!found) {
+			int rnd = RandomHelper.nextIntFromTo(0, list.size() - 1);
+			target = list.get(rnd);
+			if (target.getFrequency() > (membership_K*avg)) {
+				found = true;
+			}else {
+				target.incrementFrequency();
+				list.remove(rnd);
+				list.add(target);
+			}
+		}
+		return target;
 	}
-
+	
 	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())) {
 			// ask event.id from sender
@@ -357,7 +430,7 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
-		Event event = router.requestEvent(eventId, this.id, view.get(rnd));
+		Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());
 
 		if (event == null) {
 			// ask event directly to the source
@@ -433,14 +506,14 @@ public class Node {
 		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
 		for (int i = 0; i < fanout && i < view_size; i++) {
 			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-			Integer destinationId = this.view.get(rnd);				
+			Integer destinationId = this.view.get(rnd).getNodeId();				
 			if (selected_nodes.add(destinationId)){
-				router.sendGossip(gossip, this.id, view.get(rnd));
+				router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 				
 			} else {
-				while (!selected_nodes.add(this.view.get(rnd))) {
+				while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
 					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-					router.sendGossip(gossip, this.id, view.get(rnd));
+					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 				}
 			}
 		}
