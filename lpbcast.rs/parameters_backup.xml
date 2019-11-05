@@ -18,6 +18,12 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="round_r" displayName="R waiting rounds" type="int" 
+						defaultValue="2" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
 				<parameter name="grid_size" displayName="Grid size" type="int" 
 						defaultValue="14" 
 						isReadOnly="false" 

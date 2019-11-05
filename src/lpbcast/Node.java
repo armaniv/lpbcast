@@ -26,32 +26,33 @@ public class Node {
 	// --- node's 'configuration' parameter
 	private Router router; 					// object that deals with localization and transfer of messages
 	private Grid<Object> grid; 				// the context's grid
-	private NodeState nodeState; 			// the node's state
+	private NodeState nodeState; 			// the node's state (enum)
 	private int max_l; 						// the maximum view sizes
 	private int max_m; 						// the maximum buffers size
 	private int fanout; 					// the num of processes to which deliver a message (every T)
 	private int initial_neighbors; 			// size of initial connections (neighbors) of a node
 	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
 	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
-	private int long_ago;
-
+	private boolean age_purging;			// if true enable the event purging optimization
+	private int long_ago;					// parameter of event purging optimization
+	private Context<Object> context;
+	private Network<Object> network;
+	
 	// --- node's variables
 	private int id; 						// the node's identifier
-	private ArrayList<Integer> view; 			// the node's view
+	private ArrayList<Integer> view; 		// the node's view
 	private ArrayList<Event> events; 		// the node's events list
 	private ArrayList<Event> myEvents; 		// the events generates by this node
 	private ArrayList<String> eventIds; 	// the node's digest events list
-	private ArrayList<Integer> subs; 			// the node's subscriptions list
+	private ArrayList<Integer> subs; 		// the node's subscriptions list
 	private ArrayList<Integer> unSubs; 		// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; // the message to retrieve list
 	private int round; 						// the node's round
 	private int eventIdCounter; 			// count how many events a node created
-	private Context<Object> context;
-	private Network<Object> network;
-	private boolean age_purging;
+	
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r, int long_ago, boolean age_purging) {
+			int round_k, int round_r, boolean age_purging) {
 		this.router = router;
 		this.grid = grid;
 		this.nodeState = NodeState.INIT;
@@ -61,9 +62,9 @@ public class Node {
 		this.initial_neighbors = initial_neighbors;
 		this.round_k = round_k;
 		this.round_r = round_r;
-		this.long_ago = long_ago;
 		this.age_purging = age_purging;
-
+		this.long_ago = 10;
+		
 		this.id = id;
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
@@ -166,7 +167,6 @@ public class Node {
 
 	
 	public void broadcast() {
-		this.nodeState = NodeState.EMITTER;
 		Event event = new Event(this.id, eventIdCounter);
 		this.myEvents.add(event);
 		this.events.add(event);
@@ -174,30 +174,38 @@ public class Node {
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
-		}		
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void removeOldestNotifications() {
+		
+		ArrayList<Event> tmp = new ArrayList<>();
+		
 		// out of date purging
 		while (this.events.size() > this.max_m) {
 			for (Event e1 : this.events) {
 				for (Event e2 : this.events) {
 					if (e1.getCreatorId() == e2.getCreatorId() && e1.getEventId() - e2.getEventId() > this.long_ago) {
-						this.events.remove(e1);
+						tmp.add(e1);
 					}
 				}
 			}
+			this.events.removeAll(tmp);
+			tmp.clear();
 		}
+		
 		// by age purging
 		while (this.events.size() > this.max_m) {
 			int maxAge = Collections.max(this.events).getAge();
 			for (Event e : this.events) {
 				if (e.getAge() >= maxAge) {
-					this.events.remove(e);
+					tmp.add(e);
 				}
 			}
-		}
+			this.events.removeAll(tmp);
+			tmp.clear();
+		}		
 	}
 	
 	
@@ -256,7 +264,12 @@ public class Node {
 				}
 			}
 			
+			
+			// if event purging optimization is set to true
 			if (this.age_purging) {
+				
+				// -------------- ???? Change dim while iterating ?????			
+				
 				for (Event e1 : gossip.getEvents()) {
 					for (Event e2 : this.events) {
 						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
@@ -266,6 +279,8 @@ public class Node {
 						}
 					}
 				}
+				
+				// ----------------- ????? SELECT PROCESS  ?????
 				removeOldestNotifications();
 			}	
 
@@ -291,6 +306,8 @@ public class Node {
 				this.eventIds.remove(rnd);
 			}
 
+			
+			// if event purging optimization is set to false
 			if (!this.age_purging) {
 				while (this.events.size() > this.max_m) {
 					int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
@@ -371,15 +388,15 @@ public class Node {
 	}
 
 	public void recover() {
-		this.crashed = false;
+		this.nodeState = NodeState.INIT;
 	}
 
-	public boolean simulateCrashed() {
-		return this.crashed == true;
+	public void setCrashed() {
+		this.nodeState = NodeState.CRASHED;
 	}
 	
 	public boolean getCrashed() {
-		return this.crashed;
+		return this.nodeState == NodeState.CRASHED;
 	}
 
 }
