@@ -12,9 +12,13 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 	public Color getColor(Object o) {
 		Node node = (Node)o;
 		
-		if (node.getCrashed())	{
+		if (node.getNodeState() == NodeState.CRASHED) {
 			return Color.RED;
-		}else if (node.getNewEventThisRound()) {
+		}
+		else if (node.getNodeState() == NodeState.UNSUB) {
+			return Color.MAGENTA; // its like a purple
+		}
+		else if (node.getNewEventThisRound()) {
 			return Color.GREEN;
 		}
 		else

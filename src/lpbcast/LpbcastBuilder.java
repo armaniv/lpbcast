@@ -37,6 +37,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int round_r = params.getInteger("round_r");
 		int n_messages = params.getInteger("n_messages");
 		int churn_rate = params.getInteger("churn_rate");
+		int unsub_rate = params.getInteger("unsub_rate");
 		boolean age_purging = params.getBoolean("age_purging");
 		
 		// create a grid
@@ -52,7 +53,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		// this is the actual entity which manages communication
 		Router router = new Router();
 		
-		ApplicationNode appNode = new ApplicationNode(node_count, 100, churn_rate);
+		ApplicationNode appNode = new ApplicationNode(node_count, n_messages, churn_rate, unsub_rate);
 		context.add(appNode);
 		
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
