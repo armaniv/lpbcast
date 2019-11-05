@@ -183,13 +183,16 @@ public class Node {
 	private void removeOldestNotifications() {
 		
 		ArrayList<Event> tmp = new ArrayList<>();
+		boolean outOfDate = true;
 		
 		// out of date purging
-		while (this.events.size() > this.max_m) {
+		while (this.events.size() > this.max_m && outOfDate) {
+			outOfDate = false;
 			for (Event e1 : this.events) {
 				for (Event e2 : this.events) {
 					if (e1.getCreatorId() == e2.getCreatorId() && e1.getEventId() - e2.getEventId() > this.long_ago) {
 						tmp.add(e1);
+						outOfDate = true;
 					}
 				}
 			}
@@ -267,21 +270,22 @@ public class Node {
 			
 			
 			// if event purging optimization is set to true
-			if (this.age_purging) {
+			if (this.age_purging) {		
 				
-				// -------------- ???? Change dim while iterating ?????			
-				
+				ArrayList<Event> toRemove = new ArrayList<Event>();
+				ArrayList<Event> toAdd = new ArrayList<Event>();
 				for (Event e1 : gossip.getEvents()) {
 					for (Event e2 : this.events) {
 						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
 							e2.updateAge(e1.getAge());
-							this.events.remove(e1);
-							this.events.add(e2);
+							toRemove.remove(e1);
+							toAdd.add(e2);
 						}
 					}
 				}
 				
-				// ----------------- ????? SELECT PROCESS  ?????
+				this.events.removeAll(toRemove);
+				this.events.addAll(toAdd);
 				removeOldestNotifications();
 			}	
 
@@ -293,7 +297,7 @@ public class Node {
 					if (!this.retrieveBuf.contains(elem)) {
 						this.retrieveBuf.add(elem);
 
-						// schedule retrievement
+						// schedule retrieve
 						ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 						ScheduleParameters scheduleParameters = ScheduleParameters
 								.createOneTime(schedule.getTickCount() + this.round_k);

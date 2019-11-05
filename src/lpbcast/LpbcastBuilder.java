@@ -52,13 +52,13 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		// this is the actual entity which manages communication
 		Router router = new Router();
 		
-		ApplicationNode appNode = new ApplicationNode(node_count, n_messages, churn_rate);
+		ApplicationNode appNode = new ApplicationNode(node_count, 100, churn_rate);
 		context.add(appNode);
 		
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
 		for (int i = 0; i < node_count; i++) {
 			//Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, age_purging);
-			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, false);
+			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r, true);
 			nodes.put(i, node);
 			context.add(node);
 			appNode.addNode(node);
