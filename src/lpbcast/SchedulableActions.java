@@ -33,4 +33,17 @@ public class SchedulableActions {
 			node.requestEventFromRandom(element);
 		}
 	}
+	
+	
+	public static class RecoverFromFailure implements IAction {
+		private Node node;
+
+		public RecoverFromFailure(Node node) {
+			this.node = node;
+		}
+
+		public void execute() {
+			node.recover();
+		}
+	}
 }

@@ -37,6 +37,7 @@ public class Node {
 	private int long_ago;					// parameter of event purging optimization
 	private Context<Object> context;
 	private Network<Object> network;
+	private boolean newEventThisRound;
 	
 	// --- node's variables
 	private int id; 						// the node's identifier
@@ -108,7 +109,6 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
-		
 		if(this.nodeState != NodeState.CRASHED) {
 			round++;
 			
@@ -167,13 +167,15 @@ public class Node {
 
 	
 	public void broadcast() {
-		Event event = new Event(this.id, eventIdCounter);
-		this.myEvents.add(event);
-		this.events.add(event);
-		this.eventIds.add(event.getId());
-		eventIdCounter++;
-		if (this.age_purging) {
-			removeOldestNotifications();
+		if (this.nodeState != NodeState.CRASHED) {
+			Event event = new Event(this.id, eventIdCounter);
+			this.myEvents.add(event);
+			this.events.add(event);
+			this.eventIds.add(event.getId());
+			eventIdCounter++;
+			if (this.age_purging) {
+				removeOldestNotifications();
+			}
 		}
 	}
 	
@@ -207,7 +209,6 @@ public class Node {
 			tmp.clear();
 		}		
 	}
-	
 	
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED) {
@@ -398,5 +399,14 @@ public class Node {
 	public boolean getCrashed() {
 		return this.nodeState == NodeState.CRASHED;
 	}
+	
+	public void setNewEventThisRoundet(boolean value) {
+		this.newEventThisRound = value;
+	}
+	
+	public boolean getNewEventThisRound() {
+		return this.newEventThisRound;
+	}
+	
 
 }

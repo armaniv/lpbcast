@@ -10,14 +10,12 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 	
 	@Override
 	public Color getColor(Object o) {
-		if (!(o instanceof Node)) {
-			return Color.BLACK; 
-		}
 		Node node = (Node)o;
-		if (node.getEventIdsSize()>0)	{
-			return Color.GREEN;
-		}else if (node.getCrashed()) {
+		
+		if (node.getCrashed())	{
 			return Color.RED;
+		}else if (node.getNewEventThisRound()) {
+			return Color.GREEN;
 		}
 		else
 			return Color.BLACK;
