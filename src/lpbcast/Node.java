@@ -82,6 +82,10 @@ public class Node {
 		this.eventIdCounter = 0;
 	}
 
+	/**
+	 * Configures and initializes the node with mandatory 
+	 * informations to start participating the algorithm
+	 */
 	@ScheduledMethod(start = 1)
 	public void initialize() {
 		// initially a node knows only its neighbor
@@ -112,6 +116,10 @@ public class Node {
 		}
 	}
 
+	/**
+	 * Periodic function, which emits this node local
+	 * information about current state of the algorithm
+	 */
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
@@ -171,7 +179,10 @@ public class Node {
 		}
 	}
 
-	
+	/**
+	 * Emits a broadcast message (to be delivered
+	 * to all nodes participating to this node topic)
+	 */
 	public void broadcast() {
 		Event event = new Event(this.id, eventIdCounter);
 		this.myEvents.add(event);
