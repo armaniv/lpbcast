@@ -65,7 +65,7 @@ public class ApplicationNode {
 		while (tmp > 0){
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			if (this.nodes.get(rnd).getNodeState() == NodeState.SUB) {
-				this.nodes.get(rnd).setCrashed();
+				this.nodes.get(rnd).crash();
 				tmp--;
 				
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();

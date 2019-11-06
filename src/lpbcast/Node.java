@@ -183,19 +183,24 @@ public class Node {
 		}
 	}
 	
+	/**
+	 * Processes gossip messages and updates its
+	 * internal state based on it.
+	 * @param gossip The gossip message received
+	 */
 	public void receive(Message gossip) {
 		if(this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
 			// remove obsolete unsubs
-			ArrayList<Unsubscription> old_unsb = new ArrayList<>();
+			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
 			for(Unsubscription unsub : gossip.getUnSubs())
 			{
 				if(this.round  > (unsub.getAge() + this.long_ago)) {
-					old_unsb.add(unsub);
+					oldUnSubs.add(unsub);
 				}
 			}
-			gossip.getUnSubs().removeAll(old_unsb);
-			this.unSubs.removeAll(old_unsb);
+			gossip.getUnSubs().removeAll(oldUnSubs);
+			this.unSubs.removeAll(oldUnSubs);
 			
 			// ---- phase 1
 			for(Unsubscription unsub : gossip.getUnSubs())
@@ -210,12 +215,16 @@ public class Node {
 				}
 			}
 
+			// randomly shortens unSubs buffer
 			while (this.unSubs.size() > this.max_m) {
 				int rnd = RandomHelper.nextIntFromTo(0, this.unSubs.size() - 1);
 				this.unSubs.remove(rnd);
 			}
 
 			// ---- phase 2
+			
+			// update the view and the subscriptions buffers 
+			// with new subscriptions from the gossip message
 			for (Membership n_sub : gossip.getSubs()) {
 				if (n_sub.getNodeId() != this.id) {
 
@@ -229,36 +238,48 @@ public class Node {
 				}
 			}
 
+			// if Frequency Based Membership Purging optimization is ON
 			if (this.membership_purging) {
 				ArrayList<Membership> gossipSubs = gossip.getSubs();
 				for (int j=0; j<gossipSubs.size(); j++) {
-					Membership m = gossipSubs.get(j);
-					if (this.view.contains(m)) {
-						int i = this.view.indexOf(m);
-						Membership n = this.view.get(i);
-						if (m.getFrequency() == n.getFrequency()) {
-							n.incrementFrequency();
+					Membership gossipSub = gossipSubs.get(j);
+					
+					// if the membership received is in node's view increment
+					// the frequency of the membership contained in view
+					if (this.view.contains(gossipSub)) {
+						int i = this.view.indexOf(gossipSub);
+						Membership myMembership = this.view.get(i);
+						if (gossipSub.getFrequency() == myMembership.getFrequency()) {
+							myMembership.incrementFrequency();
 							this.view.remove(i);
-							this.view.add(n);
+							this.view.add(myMembership);
 						}
 					}else {
-						m.incrementFrequency();
-						this.view.add(m);
+						// otherwise add the membership in the 
+						// view and increment its frequency
+						gossipSub.incrementFrequency();
+						this.view.add(gossipSub);
 					}
 					
-					if (this.subs.contains(m)) { 
-						int i = this.subs.indexOf(m);
-						Membership n = this.subs.get(i);
-						if (m.getFrequency() == n.getFrequency()) {
-							n.incrementFrequency();
+					// if the received membership is in the node's subscriptions
+					// increment its frequency in the subs buffer
+					if (this.subs.contains(gossipSub)) { 
+						int i = this.subs.indexOf(gossipSub);
+						Membership myMembership = this.subs.get(i);
+						if (gossipSub.getFrequency() == myMembership.getFrequency()) {
+							myMembership.incrementFrequency();
 							this.subs.remove(i);
-							this.subs.add(n);
+							this.subs.add(myMembership);
 						}
 					}else {
-						m.incrementFrequency();
-						this.subs.add(m);
+						// otherwise we just add it in the subs and update the frequency
+						gossipSub.incrementFrequency();
+						this.subs.add(gossipSub);
 					}
 				}
+				
+				// when the size of view or subs is above the threshold truncate
+				// the buffers by selecting an element using SELECT_PROCESS()
 				while (this.view.size() > this.max_l) {
 					Membership target = selectProcess(this.view);
 					this.view.remove(target);
@@ -274,6 +295,9 @@ public class Node {
 					this.subs = view;
 				}
 			}else{
+				
+				// adapt view and subs sizes below the threshold
+				// by randomly removing elements from them
 				while (this.view.size() > this.max_l) {
 					int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 					Membership node_removed = this.view.remove(rnd);
@@ -300,24 +324,29 @@ public class Node {
 			
 			
 			// if event purging optimization is set to true
+			// we update the ages of the events based on the 
+			// events we received through the gossip message
 			if (this.age_purging) {		
-				
 				ArrayList<Event> toRemove = new ArrayList<Event>();
 				ArrayList<Event> toAdd = new ArrayList<Event>();
 				for (Event e1 : gossip.getEvents()) {
 					for (Event e2 : this.events) {
 						if (e1.getEventId() == e2.getEventId() && e2.getAge() < e1.getAge()) {
 							e2.updateAge(e1.getAge());
-							toRemove.remove(e1);
+							toRemove.add(e1);
 							toAdd.add(e2);
 						}
 					}
 				}
-				
 				this.events.removeAll(toRemove);
 				this.events.addAll(toAdd);
+				
+				// and we remove the oldest events based on age
 				removeOldestNotifications();
 			}else{
+				
+				// otherwise we just remove events randomly until
+				// the buffer has the maximum size
 				while (this.events.size() > this.max_m) {
 					int rnd = RandomHelper.nextIntFromTo(0, this.events.size() - 1);
 					this.events.remove(rnd);
@@ -325,6 +354,9 @@ public class Node {
 			}
 
 
+			// if there are events that other nodes have seen
+			// but this node did not, schedule a retrieve action
+			// where the sender of the message containing that id is contacted
 			for (String dig : gossip.getEventIds()) {
 				if (!this.eventIds.contains(dig)) {
 					Element elem = new Element(dig, this.round, gossip.getSender());
@@ -341,6 +373,7 @@ public class Node {
 				}
 			}
 
+			// randomly truncates eventIds
 			while (this.eventIds.size() > this.max_m) {
 				int rnd = RandomHelper.nextIntFromTo(0, this.eventIds.size() - 1);
 				this.eventIds.remove(rnd);
@@ -350,6 +383,10 @@ public class Node {
 		}
 	}
 	
+	/**
+	 * Purges messages (only when Age Based Purging is ON)
+	 * when either the event is out of date or is the oldest
+	 */
 	@SuppressWarnings("unchecked")
 	private void removeOldestNotifications() {
 		
@@ -384,7 +421,13 @@ public class Node {
 		}		
 	}
 
-	
+	/**
+	 * Randomly selects an element (process in this context)
+	 * which has frequency greater than the average frequency
+	 * multiplied by this.membership_K
+	 * @param list - is the list from which to select
+	 * @return the selected element (process in this context)
+	 */
 	public Membership selectProcess(ArrayList<Membership> list) {
 		boolean found = false;
 		Membership target = null;
@@ -396,7 +439,7 @@ public class Node {
 		while (!found) {
 			int rnd = RandomHelper.nextIntFromTo(0, list.size() - 1);
 			target = list.get(rnd);
-			if (target.getFrequency() > (membership_K*avg)) {
+			if (target.getFrequency() > (this.membership_K*avg)) {
 				found = true;
 			}else {
 				target.incrementFrequency();
@@ -407,6 +450,14 @@ public class Node {
 		return target;
 	}
 	
+	/**
+	 * Requests the input element from the node who
+	 * has forwarded it to this node and if the node 
+	 * gives a negative answer it schedules a RetrieveFromRandom action
+	 * in (schedule.getTickCount() + this.round_r) ticks
+	 * @param element - represents an Events but 
+	 * contains only the eventId and nodeId to connect with
+	 */
 	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())) {
 			// ask event.id from sender
@@ -427,6 +478,13 @@ public class Node {
 		}
 	}
 
+	/**
+	 * Requests the input element from a random node of the system
+	 * and if a negative answer is received requests the event 
+	 * from the source which for sure has it 
+	 * @param element - represents an Events but 
+	 * contains only the eventId and nodeId to connect with
+	 */
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 		String eventId = element.getId();
@@ -448,33 +506,6 @@ public class Node {
 			this.eventIds.add(event.getId());
 			this.retrieveBuf.remove(element);
 		}
-	}
-
-	public Event findEventId(String eventId) {
-		for (Event e : this.events) {
-			if (e.getId().equals(eventId)) {
-				return e;
-			}
-		}
-		return null;
-	}
-
-	public Event findEventIdOriginator(String eventId) {
-		for (Event e : this.myEvents) {
-			if (e.getId().equals(eventId)) {
-				return e;
-			}
-		}
-		return null;
-	}
-	
-
-	public int getEventIdsSize() {
-		return this.eventIds.size();
-	}
-
-	public int getId() {
-		return this.id;
 	}
 
 	// ----------- TODO: maybe discuss about it
@@ -519,7 +550,7 @@ public class Node {
 		}
 	}
 	
-	public void setCrashed() {
+	public void crash() {
 		this.nodeState = NodeState.CRASHED;
 		// loose information about participants and events
 		this.events.clear();
@@ -527,6 +558,24 @@ public class Node {
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
+	}
+	
+	public Event findEventId(String eventId) {
+		for (Event e : this.events) {
+			if (e.getId().equals(eventId)) {
+				return e;
+			}
+		}
+		return null;
+	}
+
+	public Event findEventIdOriginator(String eventId) {
+		for (Event e : this.myEvents) {
+			if (e.getId().equals(eventId)) {
+				return e;
+			}
+		}
+		return null;
 	}
 	
 	public void setNewEventThisRoundet(boolean value) {
@@ -539,5 +588,9 @@ public class Node {
 	
 	public NodeState getNodeState() {
 		return this.nodeState;
+	}
+	
+	public int getId() {
+		return this.id;
 	}
 }
