@@ -24,38 +24,37 @@ import repast.simphony.util.ContextUtils;
 public class Node {
 
 	// --- node's 'configuration' parameter
-	private Router router; 					// object that deals with localization and transfer of messages
-	private Grid<Object> grid; 				// the context's grid
-	private NodeState nodeState; 			// the node's state (enum)
-	private int max_l; 						// the maximum view sizes
-	private int max_m; 						// the maximum buffers size
-	private int fanout; 					// the num of processes to which deliver a message (every T)
-	private int initial_neighbors; 			// size of initial connections (neighbors) of a node
-	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
-	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
-	private boolean age_purging;			// if true enables the event purging optimization
-	private boolean membership_purging;		// if true enables the membership purging optimization
-	private double membership_K;			// 0 < K <= 1 is the weight of the avg used in SELECT_PROCESS()
-	private int long_ago;					// parameter of event purging optimization and unsub
-	private Context<Object> context;
-	private Network<Object> network;
-	private boolean newEventThisRound;
-	
-	// --- node's variables
-	private int id; 							// the node's identifier
-	private ArrayList<Membership> view; 		// the node's view
-	private ArrayList<Event> events; 			// the node's events list
-	private ArrayList<Event> myEvents; 			// the events generates by this node
-	private ArrayList<String> eventIds; 		// the node's digest events list
-	private ArrayList<Membership> subs; 			// the node's subscriptions list
-	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
-	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
-	private int round; 							// the node's round
-	private int eventIdCounter; 				// count how many events a node created
-	
+		private Router router; 					// object that deals with localization and transfer of messages
+		private Grid<Object> grid; 				// the context's grid
+		private NodeState nodeState; 			// the node's state (enum)
+		private int max_l; 						// the maximum view sizes
+		private int max_m; 						// the maximum buffers size
+		private int fanout; 					// the num of processes to which deliver a message (every T)
+		private int initial_neighbors; 			// size of initial connections (neighbors) of a node
+		private int round_k; 					// rounds to wait before asking to the sender for unseen events 
+		private int round_r; 					// rounds to wait before asking to a random node for unseen events 
+		private boolean age_purging;			// if true enables the event purging optimization
+		private boolean membership_purging;		// if true enables the membership purging optimization
+		private double membership_K;			// 0 < K <= 1 is the weight of the avg used in SELECT_PROCESS()
+		private int long_ago;					// parameter of event purging optimization and unsub
+		private Context<Object> context;		
+		private Network<Object> network;		
+		private boolean newEventThisRound;		// if true signals that this node this round generated an event
+		
+		// --- node's variables
+		private int id; 							// the node's identifier
+		private ArrayList<Membership> view; 		// the node's view
+		private ArrayList<Event> events; 			// the node's events list
+		private ArrayList<Event> myEvents; 			// the events generates by this node
+		private ArrayList<String> eventIds; 		// the node's digest events list
+		private ArrayList<Membership> subs; 		// the node's subscriptions list
+		private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
+		private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
+		private int round; 							// the node's round
+		private int eventIdCounter; 				// count how many events a node created
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r, boolean age_purging, boolean membership_purging, double membership_K) {
+			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
 		this.router = router;
 		this.grid = grid;
 		this.nodeState = NodeState.SUB;
@@ -67,9 +66,9 @@ public class Node {
 		this.round_r = round_r;
 		this.age_purging = age_purging;
 		this.membership_purging = membership_purging;
-		this.membership_K = membership_K;
+		this.membership_K = 1;
 		this.long_ago = 7;
-		
+
 		this.id = id;
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
@@ -83,8 +82,8 @@ public class Node {
 	}
 
 	/**
-	 * Configures and initializes the node with mandatory 
-	 * informations to start participating the algorithm
+	 * Configures and initializes the node with mandatory informations to start
+	 * participating the algorithm
 	 */
 	@ScheduledMethod(start = 1)
 	public void initialize() {
@@ -94,10 +93,9 @@ public class Node {
 		int neigborhood_extent = 1;
 		while (neighbors.size() < this.initial_neighbors) {
 			GridPoint pt = grid.getLocation(this);
-			GridCellNgh<Node> nghCreator = 
-					new GridCellNgh<Node>(grid, pt, Node.class, neigborhood_extent, neigborhood_extent);
-			List<GridCell<Node>> gridCells = 
-					nghCreator.getNeighborhood(false);
+			GridCellNgh<Node> nghCreator = new GridCellNgh<Node>(grid, pt, Node.class, neigborhood_extent,
+					neigborhood_extent);
+			List<GridCell<Node>> gridCells = nghCreator.getNeighborhood(false);
 
 			for (GridCell<Node> cell : gridCells) {
 				Object o = grid.getObjectAt(cell.getPoint().getX(), cell.getPoint().getY());
@@ -111,61 +109,61 @@ public class Node {
 			neigborhood_extent++;
 		}
 		for (Integer neighbor : neighbors) {
-			view.add(new Membership(neighbor,  0));
-			subs.add(new Membership(neighbor,  0));
+			view.add(new Membership(neighbor, 0));
+			subs.add(new Membership(neighbor, 0));
 		}
 	}
 
 	/**
-	 * Periodic function, which emits this node local
-	 * information about current state of the algorithm
+	 * Periodic function, which emits this node local information about current
+	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
 		round++;
-		
-		if(this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {	
+
+		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 			ArrayList<Event> events = new ArrayList<Event>();
-			for(Event e : this.events) {
+			for (Event e : this.events) {
 				e.incrementAge();
 				events.add(e);
 			}
 			this.events = events;
-	
+
 			// add self to sub
 			Membership me = new Membership(this.getId(), 0);
 			if (!this.subs.contains(me)) {
 				this.subs.add(me);
 			}
-	
+
 			// create a new gossip message
 			Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
-	
+
 			int view_size = this.view.size();
-	
+
 			context = ContextUtils.getContext(this);
-			network = (Network<Object>)context.getProjection("network");
-	
+			network = (Network<Object>) context.getProjection("network");
+
 			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
 			for (int i = 0; i < fanout && i < view_size; i++) {
 				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-				Integer destinationId = this.view.get(rnd).getNodeId();				
-				if (selected_nodes.add(destinationId)){
+				Integer destinationId = this.view.get(rnd).getNodeId();
+				if (selected_nodes.add(destinationId)) {
 
-					for(RepastEdge<Object> edge : network.getOutEdges(this)) {
+					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 						network.removeEdge(edge);
 					}
 					Node destination = this.router.locateNode(destinationId);
 					network.addEdge(this, destination);
 					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
-					
+
 				} else {
 					while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
 						rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 						destinationId = this.view.get(rnd).getNodeId();
-						
-						for(RepastEdge<Object> edge : network.getOutEdges(this)) {
+
+						for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 							network.removeEdge(edge);
 						}
 						Node destination = this.router.locateNode(destinationId);
@@ -174,14 +172,14 @@ public class Node {
 					}
 				}
 			}
-			
+
 			this.events.clear();
 		}
 	}
 
 	/**
-	 * Emits a broadcast message (to be delivered
-	 * to all nodes participating to this node topic)
+	 * Emits a broadcast message (to be delivered to all nodes participating to this
+	 * node topic)
 	 */
 	public void broadcast() {
 		Event event = new Event(this.id, eventIdCounter);
@@ -193,29 +191,27 @@ public class Node {
 			removeOldestNotifications();
 		}
 	}
-	
+
 	/**
-	 * Processes gossip messages and updates its
-	 * internal state based on it.
+	 * Processes gossip messages and updates its internal state based on it.
+	 * 
 	 * @param gossip The gossip message received
 	 */
 	public void receive(Message gossip) {
-		if(this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
+		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
 			// remove obsolete unsubs
 			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
-			for(Unsubscription unsub : gossip.getUnSubs())
-			{
-				if(this.round  > (unsub.getAge() + this.long_ago)) {
+			for (Unsubscription unsub : gossip.getUnSubs()) {
+				if (this.round > (unsub.getAge() + this.long_ago)) {
 					oldUnSubs.add(unsub);
 				}
 			}
 			gossip.getUnSubs().removeAll(oldUnSubs);
 			this.unSubs.removeAll(oldUnSubs);
-			
+
 			// ---- phase 1
-			for(Unsubscription unsub : gossip.getUnSubs())
-			{
+			for (Unsubscription unsub : gossip.getUnSubs()) {
 				this.view.removeIf(v -> v.getNodeId() == unsub.getNodeId());
 				this.subs.removeIf(s -> s.getNodeId() == unsub.getNodeId());
 			}
@@ -233,8 +229,8 @@ public class Node {
 			}
 
 			// ---- phase 2
-			
-			// update the view and the subscriptions buffers 
+
+			// update the view and the subscriptions buffers
 			// with new subscriptions from the gossip message
 			for (Membership n_sub : gossip.getSubs()) {
 				if (n_sub.getNodeId() != this.id) {
@@ -252,9 +248,9 @@ public class Node {
 			// if Frequency Based Membership Purging optimization is ON
 			if (this.membership_purging) {
 				ArrayList<Membership> gossipSubs = gossip.getSubs();
-				for (int j=0; j<gossipSubs.size(); j++) {
+				for (int j = 0; j < gossipSubs.size(); j++) {
 					Membership gossipSub = gossipSubs.get(j);
-					
+
 					// if the membership received is in node's view increment
 					// the frequency of the membership contained in view
 					if (this.view.contains(gossipSub)) {
@@ -265,16 +261,16 @@ public class Node {
 							this.view.remove(i);
 							this.view.add(myMembership);
 						}
-					}else {
-						// otherwise add the membership in the 
+					} else {
+						// otherwise add the membership in the
 						// view and increment its frequency
 						gossipSub.incrementFrequency();
 						this.view.add(gossipSub);
 					}
-					
+
 					// if the received membership is in the node's subscriptions
 					// increment its frequency in the subs buffer
-					if (this.subs.contains(gossipSub)) { 
+					if (this.subs.contains(gossipSub)) {
 						int i = this.subs.indexOf(gossipSub);
 						Membership myMembership = this.subs.get(i);
 						if (gossipSub.getFrequency() == myMembership.getFrequency()) {
@@ -282,13 +278,13 @@ public class Node {
 							this.subs.remove(i);
 							this.subs.add(myMembership);
 						}
-					}else {
+					} else {
 						// otherwise we just add it in the subs and update the frequency
 						gossipSub.incrementFrequency();
 						this.subs.add(gossipSub);
 					}
 				}
-				
+
 				// when the size of view or subs is above the threshold truncate
 				// the buffers by selecting an element using SELECT_PROCESS()
 				while (this.view.size() > this.max_l) {
@@ -298,15 +294,15 @@ public class Node {
 						this.subs.add(target);
 					}
 				}
-				
+
 				while (this.subs.size() > this.max_m) {
 					Membership target = selectProcess(this.subs);
 					ArrayList<Membership> view = new ArrayList<Membership>(this.view);
 					view.remove(target);
 					this.subs = view;
 				}
-			}else{
-				
+			} else {
+
 				// adapt view and subs sizes below the threshold
 				// by randomly removing elements from them
 				while (this.view.size() > this.max_l) {
@@ -332,12 +328,11 @@ public class Node {
 					this.eventIds.add(e.getId());
 				}
 			}
-			
-			
+
 			// if event purging optimization is set to true
-			// we update the ages of the events based on the 
+			// we update the ages of the events based on the
 			// events we received through the gossip message
-			if (this.age_purging) {		
+			if (this.age_purging) {
 				ArrayList<Event> toRemove = new ArrayList<Event>();
 				ArrayList<Event> toAdd = new ArrayList<Event>();
 				for (Event e1 : gossip.getEvents()) {
@@ -351,11 +346,11 @@ public class Node {
 				}
 				this.events.removeAll(toRemove);
 				this.events.addAll(toAdd);
-				
+
 				// and we remove the oldest events based on age
 				removeOldestNotifications();
-			}else{
-				
+			} else {
+
 				// otherwise we just remove events randomly until
 				// the buffer has the maximum size
 				while (this.events.size() > this.max_m) {
@@ -363,7 +358,6 @@ public class Node {
 					this.events.remove(rnd);
 				}
 			}
-
 
 			// if there are events that other nodes have seen
 			// but this node did not, schedule a retrieve action
@@ -390,20 +384,19 @@ public class Node {
 				this.eventIds.remove(rnd);
 			}
 
-
 		}
 	}
-	
+
 	/**
-	 * Purges messages (only when Age Based Purging is ON)
-	 * when either the event is out of date or is the oldest
+	 * Purges messages (only when Age Based Purging is ON) when either the event is
+	 * out of date or is the oldest
 	 */
 	@SuppressWarnings("unchecked")
 	private void removeOldestNotifications() {
-		
+
 		ArrayList<Event> tmp = new ArrayList<>();
 		boolean outOfDate = true;
-		
+
 		// out of date purging
 		while (this.events.size() > this.max_m && outOfDate) {
 			outOfDate = false;
@@ -418,7 +411,7 @@ public class Node {
 			this.events.removeAll(tmp);
 			tmp.clear();
 		}
-		
+
 		// by age purging
 		while (this.events.size() > this.max_m) {
 			int maxAge = Collections.max(this.events).getAge();
@@ -429,13 +422,13 @@ public class Node {
 			}
 			this.events.removeAll(tmp);
 			tmp.clear();
-		}		
+		}
 	}
 
 	/**
-	 * Randomly selects an element (process in this context)
-	 * which has frequency greater than the average frequency
-	 * multiplied by this.membership_K
+	 * Randomly selects an element (process in this context) which has frequency
+	 * greater than the average frequency multiplied by this.membership_K
+	 * 
 	 * @param list - is the list from which to select
 	 * @return the selected element (process in this context)
 	 */
@@ -450,9 +443,9 @@ public class Node {
 		while (!found) {
 			int rnd = RandomHelper.nextIntFromTo(0, list.size() - 1);
 			target = list.get(rnd);
-			if (target.getFrequency() > (this.membership_K*avg)) {
+			if (target.getFrequency() > (this.membership_K * avg)) {
 				found = true;
-			}else {
+			} else {
 				target.incrementFrequency();
 				list.remove(rnd);
 				list.add(target);
@@ -460,14 +453,14 @@ public class Node {
 		}
 		return target;
 	}
-	
+
 	/**
-	 * Requests the input element from the node who
-	 * has forwarded it to this node and if the node 
-	 * gives a negative answer it schedules a RetrieveFromRandom action
-	 * in (schedule.getTickCount() + this.round_r) ticks
-	 * @param element - represents an Events but 
-	 * contains only the eventId and nodeId to connect with
+	 * Requests the input element from the node who has forwarded it to this node
+	 * and if the node gives a negative answer it schedules a RetrieveFromRandom
+	 * action in (schedule.getTickCount() + this.round_r) ticks
+	 * 
+	 * @param element - represents an Events but contains only the eventId and
+	 *                nodeId to connect with
 	 */
 	public void requestEventFromSender(Element element) {
 		if (!this.eventIds.contains(element.getId())) {
@@ -477,7 +470,8 @@ public class Node {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + this.round_r);
+				ScheduleParameters scheduleParameters = ScheduleParameters
+						.createOneTime(schedule.getTickCount() + this.round_r);
 				schedule.schedule(scheduleParameters, new RetrieveFromRandom(element, this));
 			} else {
 				this.events.add(e);
@@ -490,11 +484,11 @@ public class Node {
 	}
 
 	/**
-	 * Requests the input element from a random node of the system
-	 * and if a negative answer is received requests the event 
-	 * from the source which for sure has it 
-	 * @param element - represents an Events but 
-	 * contains only the eventId and nodeId to connect with
+	 * Requests the input element from a random node of the system and if a negative
+	 * answer is received requests the event from the source which for sure has it
+	 * 
+	 * @param element - represents an Events but contains only the eventId and
+	 *                nodeId to connect with
 	 */
 	public void requestEventFromRandom(Element element) {
 		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
@@ -519,17 +513,24 @@ public class Node {
 		}
 	}
 
-	// ----------- TODO: maybe discuss about it
+	/**
+	 * Tell to a node to subscribe to the topic, this is done gossiping its
+	 * subscription
+	 */
 	public void subscribe() {
 		this.nodeState = NodeState.SUB;
 		// simply call gossip emission (subs will contain only self,
 		// events, eventIds, unSubs and retrieveBuf are all empty)
 		gossipEmission();
 	}
-	
+
+	/**
+	 * Tell to a node to unsubscribe to the topic, this is done gossiping its
+	 * unsubscription
+	 */
 	public void unSubscribe() {
 		this.nodeState = NodeState.UNSUB;
-		// simulate loosing interest 
+
 		this.events.clear();
 		this.eventIds.clear();
 		this.subs.clear();
@@ -537,21 +538,25 @@ public class Node {
 		this.retrieveBuf.clear();
 		unsubEmission();
 	}
-	
+
+	/**
+	 * Emits a gossip message that contains only as information the unsubscription
+	 * of the node
+	 */
 	public void unsubEmission() {
 		Unsubscription unsub = new Unsubscription(this.id, this.round);
 		this.unSubs.add(unsub);
-		
+
 		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
 		int view_size = this.view.size();
 
 		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
 		for (int i = 0; i < fanout && i < view_size; i++) {
 			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-			Integer destinationId = this.view.get(rnd).getNodeId();				
-			if (selected_nodes.add(destinationId)){
+			Integer destinationId = this.view.get(rnd).getNodeId();
+			if (selected_nodes.add(destinationId)) {
 				router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
-				
+
 			} else {
 				while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
 					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
@@ -560,17 +565,27 @@ public class Node {
 			}
 		}
 	}
-	
+
+	/**
+	 * Tell to a node to simulate a crash. A node loose information about events and
+	 * participants
+	 */
 	public void crash() {
 		this.nodeState = NodeState.CRASHED;
-		// loose information about participants and events
+
 		this.events.clear();
 		this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
 	}
-	
+
+	/**
+	 * Search for an Event in the events that this node has and return that if
+	 * present
+	 * 
+	 * @param eventId - the identifier of the event to search for
+	 */
 	public Event findEventId(String eventId) {
 		for (Event e : this.events) {
 			if (e.getId().equals(eventId)) {
@@ -580,6 +595,12 @@ public class Node {
 		return null;
 	}
 
+	/**
+	 * Search for an Event in the events that this node generated and return that if
+	 * present
+	 * 
+	 * @param eventId - the identifier of the event to search for
+	 */
 	public Event findEventIdOriginator(String eventId) {
 		for (Event e : this.myEvents) {
 			if (e.getId().equals(eventId)) {
@@ -588,19 +609,19 @@ public class Node {
 		}
 		return null;
 	}
-	
+
 	public void setNewEventThisRoundet(boolean value) {
 		this.newEventThisRound = value;
 	}
-	
+
 	public boolean getNewEventThisRound() {
 		return this.newEventThisRound;
 	}
-	
+
 	public NodeState getNodeState() {
 		return this.nodeState;
 	}
-	
+
 	public int getId() {
 		return this.id;
 	}

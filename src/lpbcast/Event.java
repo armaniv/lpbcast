@@ -2,10 +2,10 @@ package lpbcast;
 
 public class Event implements Comparable {
 
-	private Integer creatorId; 			// the Event creator
-	private Integer eventId;
-	private String id; 			// the event's digest (randomly computed)
-	private int age;
+	private Integer creatorId; 	// the Event creator
+	private Integer eventId;	// the incremental identifier of a event (each node has its own)
+	private String id; 			// the identifier of a event (creatorId + eventId)
+	private int age; 			// the event's age
 
 	public Event(Integer creatorId, int eventCounter) {
 		this.creatorId = creatorId;
@@ -17,23 +17,23 @@ public class Event implements Comparable {
 	public String getId() {
 		return this.id;
 	}
-	
+
 	public Integer getCreatorId() {
 		return this.creatorId;
 	}
-	
+
 	public int getAge() {
 		return this.age;
 	}
-	
+
 	public void incrementAge() {
 		this.age++;
 	}
-	
+
 	public void updateAge(int age) {
 		this.age = age;
 	}
-	
+
 	public int getEventId() {
 		return this.eventId;
 	}
@@ -45,11 +45,11 @@ public class Event implements Comparable {
 			return -1;
 		}
 		e = (Event) o;
-		if (this.eventId > e.getEventId()){
+		if (this.eventId > e.getEventId()) {
 			return 1;
-		}else if(this.eventId == e.getEventId()) {
+		} else if (this.eventId == e.getEventId()) {
 			return 0;
-		}else {
+		} else {
 			return -1;
 		}
 	}

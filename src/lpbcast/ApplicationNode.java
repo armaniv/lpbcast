@@ -11,12 +11,12 @@ import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.random.RandomHelper;
 
 public class ApplicationNode {
-	
-	private int node_count;				// the number of nodes in the context
-	private ArrayList<Node> nodes;		// the nodes in the context
-	private int n_messages;				// the number of messages that we want in the simulation
-	private int churn_rate;				// the churn rate that we want in the simulation
-	private int unsub_rate;				// the unsub rate that we want in the simulation
+
+	private int node_count; 			// the number of nodes in the context
+	private ArrayList<Node> nodes; 		// the nodes in the context
+	private int n_messages; 			// the number of messages that we want in the simulation
+	private int churn_rate; 			// the churn rate that we want in the simulation
+	private int unsub_rate; 			// the unsub rate that we want in the simulation
 	private int previus_sender;
 
 	public ApplicationNode(int node_count, int n_messages, int churn_rate, int unsub_rate) {
@@ -24,16 +24,18 @@ public class ApplicationNode {
 		this.nodes = new ArrayList<>();
 		this.n_messages = n_messages;
 		this.churn_rate = churn_rate;
-		this.unsub_rate = unsub_rate;	
+		this.unsub_rate = unsub_rate;
 		this.previus_sender = -1;
 	}
 
-	public void addNode(Node node){
+	public void addNode(Node node) {
 		this.nodes.add(node);
 	}
-	
-	// generate each tick a sender and, for visualization, manage the boolean 
-	// node's parameter newEventThisRound
+
+	/**
+	 * Periodic function which tells to a random node to generate an event. For
+	 * visualization purpose manage also the node's variable newEventThisRound
+	 */
 	@ScheduledMethod(start = 2, interval = 1)
 	public void generateBroadcast() {
 		// reset newEventThisRound of the previous sender
@@ -41,62 +43,60 @@ public class ApplicationNode {
 			this.nodes.get(previus_sender).setNewEventThisRoundet(false);
 		}
 		// generate a new message
-		if(n_messages > 0){
+		if (n_messages > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
-			
+
 			while (!(this.nodes.get(rnd).getNodeState() == NodeState.SUB)) {
-				 rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
+				rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			}
-			
+
 			this.previus_sender = rnd;
 			this.nodes.get(rnd).broadcast();
 			this.nodes.get(rnd).setNewEventThisRoundet(true);
 			n_messages--;
 		}
 	}
-	
-	
-	// simulate churn 
+
+	/**
+	 * Periodic function in charge of simulating the churn rate.
+	 */
 	@ScheduledMethod(start = 5, interval = 3)
 	public void generateFailure() {
 		int n_failure = (this.node_count * this.churn_rate) / 100;
 		int tmp = n_failure;
-		
-		while (tmp > 0){
+
+		while (tmp > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			if (this.nodes.get(rnd).getNodeState() == NodeState.SUB) {
 				this.nodes.get(rnd).crash();
 				tmp--;
-				
+
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-				ScheduleParameters scheduleParameters = ScheduleParameters
-						.createOneTime(schedule.getTickCount() + 3);
+				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 3);
 				schedule.schedule(scheduleParameters, new RecoverAndSubscribe(this.nodes.get(rnd)));
-			}	
+			}
 		}
 	}
-	
-	// simulate un-subscription
+
+	/**
+	 * Periodic function in charge of simulating the unsubscription rate.
+	 */
 	@ScheduledMethod(start = 3, interval = 7)
 	public void generateUnsubscription() {
 		int n_unsubs = (this.node_count * this.unsub_rate) / 100;
 		int tmp = n_unsubs;
-		
-		while (tmp > 0){
+
+		while (tmp > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			if (this.nodes.get(rnd).getNodeState() == NodeState.SUB) {
 				this.nodes.get(rnd).unSubscribe();
 				tmp--;
-				
+
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-				ScheduleParameters scheduleParameters = ScheduleParameters
-						.createOneTime(schedule.getTickCount() + 7);
+				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 7);
 				schedule.schedule(scheduleParameters, new RecoverAndSubscribe(this.nodes.get(rnd)));
-			}	
+			}
 		}
 	}
-	
-	
-	
-	
+
 }
