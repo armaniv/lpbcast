@@ -25,7 +25,7 @@ public class Membership {
 	public boolean equals(Object o) {
 		if (o instanceof Membership) {
 			Membership p = (Membership) o;
-			return this.nodeId.equals(p.getNodeId());
+			return (this.nodeId.equals(p.getNodeId()) && this.frequency.equals(p.getFrequency()));
 		} else
 			return false;
 	}

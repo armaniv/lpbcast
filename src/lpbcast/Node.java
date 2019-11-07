@@ -156,6 +156,7 @@ public class Node {
 					}
 					Node destination = this.router.locateNode(destinationId);
 					network.addEdge(this, destination);
+					
 					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 
 				} else {
@@ -250,17 +251,16 @@ public class Node {
 				ArrayList<Membership> gossipSubs = gossip.getSubs();
 				for (int j = 0; j < gossipSubs.size(); j++) {
 					Membership gossipSub = gossipSubs.get(j);
+					int old_freq = gossipSub.getFrequency();
 
 					// if the membership received is in node's view increment
 					// the frequency of the membership contained in view
 					if (this.view.contains(gossipSub)) {
 						int i = this.view.indexOf(gossipSub);
 						Membership myMembership = this.view.get(i);
-						if (gossipSub.getFrequency() == myMembership.getFrequency()) {
-							myMembership.incrementFrequency();
-							this.view.remove(i);
-							this.view.add(myMembership);
-						}
+						myMembership.incrementFrequency();
+						this.view.remove(i);
+						this.view.add(myMembership);
 					} else {
 						// otherwise add the membership in the
 						// view and increment its frequency
@@ -273,14 +273,14 @@ public class Node {
 					if (this.subs.contains(gossipSub)) {
 						int i = this.subs.indexOf(gossipSub);
 						Membership myMembership = this.subs.get(i);
-						if (gossipSub.getFrequency() == myMembership.getFrequency()) {
-							myMembership.incrementFrequency();
-							this.subs.remove(i);
-							this.subs.add(myMembership);
-						}
+						myMembership.incrementFrequency();
+						this.subs.remove(i);
+						this.subs.add(myMembership);
 					} else {
 						// otherwise we just add it in the subs and update the frequency
-						gossipSub.incrementFrequency();
+						if (gossipSub.getFrequency() == old_freq) {
+							gossipSub.incrementFrequency();
+						}
 						this.subs.add(gossipSub);
 					}
 				}
@@ -320,8 +320,10 @@ public class Node {
 				}
 			}
 
-			// ---- phase 3
-			for (Event e : gossip.getEvents()) {
+			// ---- phase 3			
+			ArrayList<Event> gossipEvents = gossip.getEvents();
+			for (int i=0; i<gossipEvents.size(); i++) {
+				Event e = gossipEvents.get(i);
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
 					// LPB-DELIVER(e)
