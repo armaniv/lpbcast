@@ -27,6 +27,8 @@ public class Node {
 		private Router router; 					// object that deals with localization and transfer of messages
 		private Grid<Object> grid; 				// the context's grid
 		private NodeState nodeState; 			// the node's state (enum)
+		private AppNode appNode;				// the node responsible of the simulation
+												// it manages, crashes, broadcast generation, etc
 		private int max_l; 						// the maximum view sizes
 		private int max_m; 						// the maximum buffers size
 		private int fanout; 					// the num of processes to which deliver a message (every T)
@@ -182,8 +184,8 @@ public class Node {
 	 * Emits a broadcast message (to be delivered to all nodes participating to this
 	 * node topic)
 	 */
-	public void broadcast() {
-		Event event = new Event(this.id, eventIdCounter);
+	public String broadcast() {
+		Event event = new Event(this.id, this.eventIdCounter);
 		this.myEvents.add(event);
 		this.events.add(event);
 		this.eventIds.add(event.getId());
@@ -191,6 +193,7 @@ public class Node {
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
+		return event.getId();
 	}
 
 	/**
@@ -326,7 +329,16 @@ public class Node {
 				Event e = gossipEvents.get(i);
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
-					// LPB-DELIVER(e)
+					// if this was an event which I was waiting for
+					// I delete it from the retrieve buffer
+					for (int k=0; k<this.retrieveBuf.size(); k++) {
+						Element elem = this.retrieveBuf.get(k);
+						if (elem.getId() == e.getId()) {
+							this.retrieveBuf.remove(k);
+						}
+					}
+					// deliver event to the application
+					this.deliver(e);
 					this.eventIds.add(e.getId());
 				}
 			}
@@ -465,8 +477,9 @@ public class Node {
 	 *                nodeId to connect with
 	 */
 	public void requestEventFromSender(Element element) {
-		if (!this.eventIds.contains(element.getId())) {
-			// ask event.id from sender
+		// if still had not received the event
+		// ask the sender for it
+		if (this.retrieveBuf.contains(element)) {
 			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
@@ -479,9 +492,8 @@ public class Node {
 				this.events.add(e);
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
+				this.deliver(e);
 			}
-		} else {
-			this.retrieveBuf.remove(element);
 		}
 	}
 
@@ -493,25 +505,30 @@ public class Node {
 	 *                nodeId to connect with
 	 */
 	public void requestEventFromRandom(Element element) {
-		int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
-		String eventId = element.getId();
-		Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());
-
-		if (event == null) {
-			// ask event directly to the source
-			String[] parts = eventId.split("_");
-			int eventCreator = Integer.parseInt(parts[0]);
-			event = router.requestEventToOriginator(eventId, this.id, eventCreator);
-			if (event != null) {
+		// if still had not received the event
+		// ask the a random node for it
+		if (this.retrieveBuf.contains(element)) {
+			int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
+			String eventId = element.getId();
+			Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());
+			// if the random process does not have the event or it is crashed
+			if (event == null) {
+				// ask event directly to the source
+				String[] parts = eventId.split("_");
+				int eventCreator = Integer.parseInt(parts[0]);
+				event = router.requestEventToOriginator(eventId, this.id, eventCreator);
+				if (event != null) {
+					this.events.add(event);
+					this.eventIds.add(event.getId());
+					this.retrieveBuf.remove(element);
+					this.deliver(event);
+				}
+			} else {
 				this.events.add(event);
-				// LPB-DELIVER(event)
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
+				this.deliver(event);
 			}
-		} else {
-			this.events.add(event);
-			this.eventIds.add(event.getId());
-			this.retrieveBuf.remove(element);
 		}
 	}
 
@@ -611,6 +628,10 @@ public class Node {
 		}
 		return null;
 	}
+	
+	public void deliver(Event e) {
+		this.appNode.signalEventReception(e.getId(), this.id);
+	}
 
 	public void setNewEventThisRoundet(boolean value) {
 		this.newEventThisRound = value;
@@ -626,5 +647,9 @@ public class Node {
 
 	public int getId() {
 		return this.id;
+	}
+	
+	public void setAppNode(AppNode appNode) {
+		this.appNode = appNode;
 	}
 }

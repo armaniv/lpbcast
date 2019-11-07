@@ -632,3 +632,243 @@ Caused by: java.util.ConcurrentModificationException
 	at lpbcast.Router.sendGossip(Router.java:17)
 	at lpbcast.Node.gossipEmission(Node.java:172)
 	... 10 more
+FATAL [Thread-3] 2019-11-07 17:18:02,418 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (2.0)
+java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:72)
+	at repast.simphony.engine.controller.ScheduledMethodControllerAction$ScheduleMethodAllAction.execute(ScheduledMethodControllerAction.java:333)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+Caused by: java.lang.reflect.InvocationTargetException
+	at lpbcast.AppNode$$FastClassByCGLIB$$36759e52.invoke(<generated>)
+	at net.sf.cglib.reflect.FastMethod.invoke(FastMethod.java:53)
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:69)
+	... 7 more
+Caused by: java.lang.NullPointerException
+	at lpbcast.AppNode.generateBroadcast(AppNode.java:59)
+	... 10 more
+FATAL [Thread-3] 2019-11-07 17:19:52,501 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (2.0)
+java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:72)
+	at repast.simphony.engine.controller.ScheduledMethodControllerAction$ScheduleMethodAllAction.execute(ScheduledMethodControllerAction.java:333)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+Caused by: java.lang.reflect.InvocationTargetException
+	at lpbcast.AppNode$$FastClassByCGLIB$$36759e52.invoke(<generated>)
+	at net.sf.cglib.reflect.FastMethod.invoke(FastMethod.java:53)
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:69)
+	... 7 more
+Caused by: java.lang.NullPointerException
+	at lpbcast.AppNode.generateBroadcast(AppNode.java:59)
+	... 10 more
+FATAL [Thread-3] 2019-11-07 17:24:53,879 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (2.0)
+java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:72)
+	at repast.simphony.engine.controller.ScheduledMethodControllerAction$ScheduleMethodAllAction.execute(ScheduledMethodControllerAction.java:333)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+Caused by: java.lang.reflect.InvocationTargetException
+	at lpbcast.Node$$FastClassByCGLIB$$25f255d3.invoke(<generated>)
+	at net.sf.cglib.reflect.FastMethod.invoke(FastMethod.java:53)
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:69)
+	... 7 more
+Caused by: java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:620)
+	at lpbcast.Node.receive(Node.java:333)
+	at lpbcast.Router.sendGossip(Router.java:17)
+	at lpbcast.Node.gossipEmission(Node.java:162)
+	... 10 more
+FATAL [Thread-3] 2019-11-07 17:27:53,694 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (3.0)
+java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:72)
+	at repast.simphony.engine.controller.ScheduledMethodControllerAction$ScheduleMethodAllAction.execute(ScheduledMethodControllerAction.java:333)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+Caused by: java.lang.reflect.InvocationTargetException
+	at lpbcast.Node$$FastClassByCGLIB$$25f255d3.invoke(<generated>)
+	at net.sf.cglib.reflect.FastMethod.invoke(FastMethod.java:53)
+	at repast.simphony.engine.schedule.DynamicTargetAction.execute(DynamicTargetAction.java:69)
+	... 7 more
+Caused by: java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:620)
+	at lpbcast.Node.receive(Node.java:333)
+	at lpbcast.Router.sendGossip(Router.java:17)
+	at lpbcast.Node.gossipEmission(Node.java:162)
+	... 10 more
+FATAL [Thread-3] 2019-11-07 17:35:51,141 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (9.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 17:39:19,446 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (12.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 17:39:34,623 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (11.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 17:44:00,329 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (9.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 17:47:23,947 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (12.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 17:50:35,166 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (7.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:621)
+	at lpbcast.Node.requestEventFromRandom(Node.java:512)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:00:03,194 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (12.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:635)
+	at lpbcast.Node.requestEventFromRandom(Node.java:525)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:04:15,297 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (8.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:635)
+	at lpbcast.Node.requestEventFromRandom(Node.java:525)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:08:04,547 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (8.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:633)
+	at lpbcast.Node.requestEventFromRandom(Node.java:524)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:08:36,037 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (9.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:633)
+	at lpbcast.Node.requestEventFromRandom(Node.java:524)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:09:19,188 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (9.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:109)
+	at lpbcast.Node.deliver(Node.java:633)
+	at lpbcast.Node.requestEventFromRandom(Node.java:524)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+FATAL [Thread-3] 2019-11-07 18:26:19,406 repast.simphony.ui.GUIScheduleRunner - RunTimeException when running the schedule
+Current tick (9.0)
+java.lang.NullPointerException
+	at lpbcast.AppNode.signalEventReception(AppNode.java:112)
+	at lpbcast.Node.deliver(Node.java:633)
+	at lpbcast.Node.requestEventFromRandom(Node.java:524)
+	at lpbcast.SchedulableActions$RetrieveFromRandom.execute(SchedulableActions.java:37)
+	at repast.simphony.engine.schedule.DefaultAction.execute(DefaultAction.java:38)
+	at repast.simphony.engine.schedule.ScheduleGroup.executeList(ScheduleGroup.java:205)
+	at repast.simphony.engine.schedule.ScheduleGroup.execute(ScheduleGroup.java:231)
+	at repast.simphony.engine.schedule.Schedule.execute(Schedule.java:352)
+	at repast.simphony.ui.GUIScheduleRunner$ScheduleLoopRunnable.run(GUIScheduleRunner.java:52)
+	at java.base/java.lang.Thread.run(Thread.java:834)
