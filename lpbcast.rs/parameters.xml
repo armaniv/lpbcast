@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <parameters>
 					<parameter name="fanout" displayName="Fanout" type="int" 
-						defaultValue="3" 
+						defaultValue="2" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -13,7 +13,7 @@
 									
 		/>
 				<parameter name="round_k" displayName="K waiting rounds" type="int" 
-						defaultValue="2" 
+						defaultValue="1" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -32,13 +32,13 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="50" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="round_r" displayName="R waiting rounds" type="int" 
-						defaultValue="2" 
+						defaultValue="1" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -51,7 +51,7 @@
 						
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
-						defaultValue="100" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -69,19 +69,19 @@
 									
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
-						defaultValue="15" 
-						isReadOnly="false" 
-						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
-									
-		/>
-				<parameter name="initial_neighbors" displayName="Initial neighbors" type="int" 
 						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="initial_neighbors" displayName="Initial neighbors" type="int" 
+						defaultValue="3" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
 				<parameter name="max_m" displayName="Max buffers size" type="int" 
-						defaultValue="20" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

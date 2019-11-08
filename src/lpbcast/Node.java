@@ -121,7 +121,7 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 3, interval = 2)
+	@ScheduledMethod(start = 3, interval = 1)
 	public void gossipEmission() {
 		round++;
 
@@ -151,6 +151,7 @@ public class Node {
 			for (int i = 0; i < fanout && i < view_size; i++) {
 				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 				Integer destinationId = this.view.get(rnd).getNodeId();
+				
 				if (selected_nodes.add(destinationId)) {
 
 					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
@@ -193,6 +194,7 @@ public class Node {
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
+		System.out.println("node " + this.id + " generates event " + this.eventIdCounter);
 		return event.getId();
 	}
 
@@ -203,6 +205,13 @@ public class Node {
 	 */
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
+			
+			System.out.println();
+			System.out.println(gossip.getSender().getId() + "->" + this.id );
+			for (Event e : gossip.getEvents()) {
+				System.out.print("\t"+e.getId());
+			}
+			System.out.println();
 
 			// remove obsolete unsubs
 			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
@@ -309,6 +318,7 @@ public class Node {
 				// adapt view and subs sizes below the threshold
 				// by randomly removing elements from them
 				while (this.view.size() > this.max_l) {
+					
 					int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 					Membership node_removed = this.view.remove(rnd);
 
@@ -327,6 +337,7 @@ public class Node {
 			ArrayList<Event> gossipEvents = gossip.getEvents();
 			for (int i=0; i<gossipEvents.size(); i++) {
 				Event e = gossipEvents.get(i);
+				
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
 					/*
@@ -349,6 +360,7 @@ public class Node {
 			// we update the ages of the events based on the
 			// events we received through the gossip message
 			if (this.age_purging) {
+				
 				ArrayList<Event> toRemove = new ArrayList<Event>();
 				ArrayList<Event> toAdd = new ArrayList<Event>();
 				for (Event e1 : gossip.getEvents()) {
@@ -365,6 +377,7 @@ public class Node {
 
 				// and we remove the oldest events based on age
 				removeOldestNotifications();
+				
 			} else {
 
 				// otherwise we just remove events randomly until
@@ -492,9 +505,9 @@ public class Node {
 				schedule.schedule(scheduleParameters, new RetrieveFromRandom(element, this));
 			} else {
 				this.events.add(e);
+				this.deliver(e);
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
-				this.deliver(e);
 			}
 		}
 	}
@@ -521,15 +534,15 @@ public class Node {
 				event = router.requestEventToOriginator(eventId, this.id, eventCreator);
 				if (event != null) {
 					this.events.add(event);
+					this.deliver(event);
 					this.eventIds.add(event.getId());
 					this.retrieveBuf.remove(element);
-					this.deliver(event);
 				}
 			} else {
 				this.events.add(event);
+				this.deliver(event);
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
-				this.deliver(event);
 			}
 		}
 	}
@@ -561,7 +574,7 @@ public class Node {
 	}
 
 	/**
-	 * Emits a gossip message that contains only as information the unsubscription
+	 * Emits a gossip message that contains only information about the unsubscription
 	 * of the node
 	 */
 	public void unsubEmission() {

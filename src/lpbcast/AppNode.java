@@ -42,7 +42,7 @@ public class AppNode {
 	 * Periodic function which tells to a random node to generate an event. For
 	 * visualization purpose manage also the node's variable newEventThisRound
 	 */
-	@ScheduledMethod(start = 2, interval = 2)
+	@ScheduledMethod(start = 2, interval = 1)
 	public void generateBroadcast() {
 		// reset newEventThisRound of the previous sender
 //		if (this.previus_sender != -1 && n_messages >= 0) {
@@ -122,7 +122,7 @@ public class AppNode {
 		}
 	}
 	
-	@ScheduledMethod(start = 300)
+	@ScheduledMethod(start = 150)
 	public void asd() {
 		for (Integer nodeId : this.nodes.keySet()) {
 			Node node = this.nodes.get(nodeId);
