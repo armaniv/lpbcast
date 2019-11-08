@@ -121,7 +121,7 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 2, interval = 1)
+	@ScheduledMethod(start = 3, interval = 2)
 	public void gossipEmission() {
 		round++;
 
@@ -329,6 +329,7 @@ public class Node {
 				Event e = gossipEvents.get(i);
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
+					/*
 					// if this was an event which I was waiting for
 					// I delete it from the retrieve buffer
 					for (int k=0; k<this.retrieveBuf.size(); k++) {
@@ -337,6 +338,7 @@ public class Node {
 							this.retrieveBuf.remove(k);
 						}
 					}
+					*/
 					// deliver event to the application
 					this.deliver(e);
 					this.eventIds.add(e.getId());
@@ -479,7 +481,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		// if still had not received the event
 		// ask the sender for it
-		if (this.retrieveBuf.contains(element)) {
+		if (!this.eventIds.contains(element.getId()) /*&& this.retrieveBuf.contains(element)*/) {
 			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
 			if (e == null) {
 				// if we don't receive an answer from the sender
@@ -507,7 +509,7 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		// if still had not received the event
 		// ask the a random node for it
-		if (this.retrieveBuf.contains(element)) {
+		if (!this.eventIds.contains(element.getId()) /*&& this.retrieveBuf.contains(element)*/) {
 			int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 			String eventId = element.getId();
 			Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());

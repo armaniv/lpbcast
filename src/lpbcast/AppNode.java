@@ -42,7 +42,7 @@ public class AppNode {
 	 * Periodic function which tells to a random node to generate an event. For
 	 * visualization purpose manage also the node's variable newEventThisRound
 	 */
-	@ScheduledMethod(start = 2, interval = 1)
+	@ScheduledMethod(start = 2, interval = 2)
 	public void generateBroadcast() {
 		// reset newEventThisRound of the previous sender
 //		if (this.previus_sender != -1 && n_messages >= 0) {
@@ -52,16 +52,17 @@ public class AppNode {
 		if (n_messages > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 
-			while (!(this.nodes.get(rnd).getNodeState() == NodeState.SUB)) {
+			while (this.nodes.get(rnd).getNodeState() != NodeState.SUB) {
 				rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			}
 
 			this.previus_sender = rnd;
 			String eventId = this.nodes.get(rnd).broadcast();
 			HashSet<Integer> receivers = new HashSet<Integer>();
-			receivers.add(rnd);
+			receivers.add(nodes.get(rnd).getId());
 			this.messages.put(eventId, receivers);
 			this.nodes.get(rnd).setNewEventThisRoundet(true);
+			n_messages--;
 		}
 	}
 
@@ -112,12 +113,30 @@ public class AppNode {
 			HashSet<Integer> receivers = this.messages.remove(eventId);
 			receivers.add(receiver);
 			if (receivers.size() == this.node_count) {
-				this.nodes.get(receiver).setNewEventThisRoundet(false);
+				String[] parts = eventId.split("_");
+				int eventGeneratorNodeId = Integer.parseInt(parts[0]);
+				this.nodes.get(eventGeneratorNodeId).setNewEventThisRoundet(false);
 			}else {
 				this.messages.put(eventId, receivers);
 			}
 		}
-
+	}
+	
+	@ScheduledMethod(start = 300)
+	public void asd() {
+		for (Integer nodeId : this.nodes.keySet()) {
+			Node node = this.nodes.get(nodeId);
+			if (node.getNewEventThisRound() == true) {
+				for (String key : this.messages.keySet()) {
+					HashSet<Integer> receivers = this.messages.get(key);
+					if (receivers.size() != this.node_count) {
+						System.out.println(key + " " + receivers.size());
+					}
+				}
+				
+			}
+			
+		}
 	}
 
 }
