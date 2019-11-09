@@ -181,7 +181,7 @@ public class Node {
 					}
 				}
 			}
-			System.out.println("");
+			System.out.println(this.id + "sends ["+ gossip.toString() + "]");
 
 			this.events.clear();
 		}

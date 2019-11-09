@@ -41,4 +41,13 @@ public class Message {
 		return unSubs;
 	}
 
+	
+	public String toString() {
+		String ato = "";
+		for (Event e : this.events) {
+			ato = e.getId() + " ";
+		}
+			
+		return ato;
+	}
 }
