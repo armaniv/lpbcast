@@ -42,13 +42,15 @@ public class AppNode {
 	 * Periodic function which tells to a random node to generate an event. For
 	 * visualization purpose manage also the node's variable newEventThisRound
 	 */
-	@ScheduledMethod(start = 2, interval = 1)
+	@ScheduledMethod(start = 2, interval = 1, priority = 2)
 	public void generateBroadcast() {
 		// reset newEventThisRound of the previous sender
 //		if (this.previus_sender != -1 && n_messages >= 0) {
 //			this.nodes.get(previus_sender).setNewEventThisRoundet(false);
 //		}
 		// generate a new message
+		System.out.println("-----------tick-----------------");
+		
 		if (n_messages > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 
@@ -57,9 +59,7 @@ public class AppNode {
 			}
 
 			this.previus_sender = rnd;
-			this.nodes.get(rnd).boolbroadcast = true;
-			// creatorId + "_" + eventCounter;//
-			String eventId = this.nodes.get(rnd).getId() + "_" + this.nodes.get(rnd).eventIdCounter;
+			String eventId = this.nodes.get(rnd).broadcast();
 			
 			HashSet<Integer> receivers = new HashSet<Integer>();
 			receivers.add(nodes.get(rnd).getId());
@@ -124,7 +124,7 @@ public class AppNode {
 		}
 	}
 	
-	@ScheduledMethod(start = 150)
+	@ScheduledMethod(start = 35)
 	public void asd() {
 		for (String key : this.messages.keySet()) {
 			HashSet<Integer> receivers = this.messages.get(key);

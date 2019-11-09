@@ -42,7 +42,6 @@ public class Node {
 		private Context<Object> context;		
 		private Network<Object> network;		
 		private boolean newEventThisRound;		// if true signals that this node this round generated an event
-		public boolean boolbroadcast = false;
 		
 		// --- node's variables
 		private int id; 							// the node's identifier
@@ -54,7 +53,7 @@ public class Node {
 		private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
 		private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
 		private int round; 							// the node's round
-		public int eventIdCounter; 				// count how many events a node created
+		private int eventIdCounter; 				// count how many events a node created
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
@@ -123,7 +122,7 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 2, interval = 1)
+	@ScheduledMethod(start = 3, interval = 1, priority = 1)
 	public void gossipEmission() {
 		round++;
 
@@ -142,19 +141,19 @@ public class Node {
 			}
 
 			// create a new gossip message
-			Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
+			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
 
 			int view_size = this.view.size();
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
 
-			//LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
 			for (int i = 0; i < fanout && i < view_size ; i++) {
 				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 				Integer destinationId = this.view.get(rnd).getNodeId();
 				
-				//if (selected_nodes.add(destinationId)) {
+				if (selected_nodes.add(destinationId)) {
 
 					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 						network.removeEdge(edge);
@@ -165,7 +164,7 @@ public class Node {
 					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 					System.out.print(this.id +  "-> " + view.get(rnd).getNodeId() + ", ");
 
-				/*} else {
+				} else {
 					int n_iter = 0;
 					while (!selected_nodes.add(this.view.get(rnd).getNodeId()) && n_iter < 3) {
 						n_iter ++;
@@ -180,15 +179,9 @@ public class Node {
 						router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
 						System.out.print(this.id +  "->! " + view.get(rnd).getNodeId() + ", ");
 					}
-				}*/
+				}
 			}
 			System.out.println("");
-			
-			if (this.boolbroadcast)
-			{
-				broadcast();
-				this.boolbroadcast = false;
-			}
 
 			this.events.clear();
 		}
@@ -220,10 +213,8 @@ public class Node {
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 			
-			for (Event e : gossip.getEvents()) {
-				System.out.println("\t"+ this.id  + "delivers " + e.getId());
-			}
-
+			System.out.println(this.id  + "<-" + gossip.getSender());
+			
 			// remove obsolete unsubs
 			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
 			for (Unsubscription unsub : gossip.getUnSubs()) {
@@ -362,6 +353,7 @@ public class Node {
 					}
 					*/
 					// deliver event to the application
+					System.out.println("\t" + this.id  + " deliver " + e.getId());
 					this.deliver(e);
 					this.eventIds.add(e.getId());
 				}
@@ -506,7 +498,7 @@ public class Node {
 		// if still had not received the event
 		// ask the sender for it
 		if (!this.eventIds.contains(element.getId()) /*&& this.retrieveBuf.contains(element)*/) {
-			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender().getId());
+			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender());
 			if (e == null) {
 				// if we don't receive an answer from the sender
 				// schedule fetch from a random process
@@ -592,7 +584,7 @@ public class Node {
 		Unsubscription unsub = new Unsubscription(this.id, this.round);
 		this.unSubs.add(unsub);
 
-		Message gossip = new Message(this, this.events, this.eventIds, this.subs, this.unSubs);
+		Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
 		int view_size = this.view.size();
 
 		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list

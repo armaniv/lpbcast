@@ -25,7 +25,7 @@
 									
 		/>
 				<parameter name="age_purging" displayName="Age purging opt" type="boolean" 
-						defaultValue="true" 
+						defaultValue="false" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
@@ -44,7 +44,7 @@
 									
 		/>
 				<parameter name="frequency_purging" displayName="Freq purging opt" type="boolean" 
-						defaultValue="true" 
+						defaultValue="false" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
@@ -69,7 +69,7 @@
 									
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
-						defaultValue="15" 
+						defaultValue="30" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
