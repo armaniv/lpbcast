@@ -57,11 +57,13 @@ public class AppNode {
 			}
 
 			this.previus_sender = rnd;
-			String eventId = this.nodes.get(rnd).broadcast();
+			this.nodes.get(rnd).boolbroadcast = true;
+			// creatorId + "_" + eventCounter;//
+			String eventId = this.nodes.get(rnd).getId() + "_" + this.nodes.get(rnd).eventIdCounter;
+			
 			HashSet<Integer> receivers = new HashSet<Integer>();
 			receivers.add(nodes.get(rnd).getId());
 			this.messages.put(eventId, receivers);
-			this.nodes.get(rnd).setNewEventThisRoundet(true);
 			n_messages--;
 		}
 	}
@@ -124,19 +126,12 @@ public class AppNode {
 	
 	@ScheduledMethod(start = 150)
 	public void asd() {
-		for (Integer nodeId : this.nodes.keySet()) {
-			Node node = this.nodes.get(nodeId);
-			if (node.getNewEventThisRound() == true) {
-				for (String key : this.messages.keySet()) {
-					HashSet<Integer> receivers = this.messages.get(key);
-					if (receivers.size() != this.node_count) {
-						System.out.println(key + " " + receivers.size());
-					}
-				}
-				
+		for (String key : this.messages.keySet()) {
+			HashSet<Integer> receivers = this.messages.get(key);
+			if (receivers.size() != this.node_count) {
+				System.out.println(key + " " + receivers.size());
 			}
-			
 		}
 	}
-
+	
 }

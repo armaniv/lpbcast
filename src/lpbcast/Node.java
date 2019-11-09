@@ -42,6 +42,7 @@ public class Node {
 		private Context<Object> context;		
 		private Network<Object> network;		
 		private boolean newEventThisRound;		// if true signals that this node this round generated an event
+		public boolean boolbroadcast = false;
 		
 		// --- node's variables
 		private int id; 							// the node's identifier
@@ -53,7 +54,7 @@ public class Node {
 		private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
 		private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
 		private int round; 							// the node's round
-		private int eventIdCounter; 				// count how many events a node created
+		public int eventIdCounter; 				// count how many events a node created
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
@@ -114,6 +115,7 @@ public class Node {
 			view.add(new Membership(neighbor, 0));
 			subs.add(new Membership(neighbor, 0));
 		}
+		
 	}
 
 	/**
@@ -121,7 +123,7 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 3, interval = 1)
+	@ScheduledMethod(start = 2, interval = 1)
 	public void gossipEmission() {
 		round++;
 
@@ -147,12 +149,12 @@ public class Node {
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
 
-			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
-			for (int i = 0; i < fanout && i < view_size; i++) {
+			//LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+			for (int i = 0; i < fanout && i < view_size ; i++) {
 				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 				Integer destinationId = this.view.get(rnd).getNodeId();
 				
-				if (selected_nodes.add(destinationId)) {
+				//if (selected_nodes.add(destinationId)) {
 
 					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 						network.removeEdge(edge);
@@ -161,9 +163,12 @@ public class Node {
 					network.addEdge(this, destination);
 					
 					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
+					System.out.print(this.id +  "-> " + view.get(rnd).getNodeId() + ", ");
 
-				} else {
-					while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
+				/*} else {
+					int n_iter = 0;
+					while (!selected_nodes.add(this.view.get(rnd).getNodeId()) && n_iter < 3) {
+						n_iter ++;
 						rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
 						destinationId = this.view.get(rnd).getNodeId();
 
@@ -173,8 +178,16 @@ public class Node {
 						Node destination = this.router.locateNode(destinationId);
 						network.addEdge(this, destination);
 						router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
+						System.out.print(this.id +  "->! " + view.get(rnd).getNodeId() + ", ");
 					}
-				}
+				}*/
+			}
+			System.out.println("");
+			
+			if (this.boolbroadcast)
+			{
+				broadcast();
+				this.boolbroadcast = false;
 			}
 
 			this.events.clear();
@@ -194,7 +207,8 @@ public class Node {
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
-		System.out.println("node " + this.id + " generates event " + this.eventIdCounter);
+		System.out.println("node " + this.id + " generates event " + this.eventIdCounter + "\n");
+		setNewEventThisRoundet(true);
 		return event.getId();
 	}
 
@@ -206,12 +220,9 @@ public class Node {
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 			
-			System.out.println();
-			System.out.println(gossip.getSender().getId() + "->" + this.id );
 			for (Event e : gossip.getEvents()) {
-				System.out.print("\t"+e.getId());
+				System.out.println("\t"+ this.id  + "delivers " + e.getId());
 			}
-			System.out.println();
 
 			// remove obsolete unsubs
 			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
