@@ -122,7 +122,7 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 3, interval = 1, priority = 1)
+	@ScheduledMethod(start = 2, interval = 1, priority = 1)
 	public void gossipEmission() {
 		round++;
 
@@ -281,7 +281,7 @@ public class Node {
 						gossipSub.incrementFrequency();
 						this.view.add(gossipSub);
 					}
-
+					
 					// if the received membership is in the node's subscriptions
 					// increment its frequency in the subs buffer
 					if (this.subs.contains(gossipSub)) {
@@ -315,6 +315,7 @@ public class Node {
 					view.remove(target);
 					this.subs = view;
 				}
+				
 			} else {
 
 				// adapt view and subs sizes below the threshold
@@ -412,8 +413,7 @@ public class Node {
 
 			// randomly truncates eventIds
 			while (this.eventIds.size() > this.max_m) {
-				int rnd = RandomHelper.nextIntFromTo(0, this.eventIds.size() - 1);
-				this.eventIds.remove(rnd);
+				this.eventIds.remove(0);
 			}
 
 		}
@@ -479,8 +479,6 @@ public class Node {
 				found = true;
 			} else {
 				target.incrementFrequency();
-				list.remove(rnd);
-				list.add(target);
 			}
 		}
 		return target;
