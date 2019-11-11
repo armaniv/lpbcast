@@ -2,6 +2,7 @@ package lpbcast;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -41,15 +42,17 @@ public class Node {
 		private int long_ago;					// parameter of event purging optimization and unsub
 		private Context<Object> context;		
 		private Network<Object> network;		
-		private boolean newEventThisRound;		// if true signals that this node this round generated an event
 		
 		// --- node's variables
 		private int id; 							// the node's identifier
 		private ArrayList<Membership> view; 		// the node's view
 		private ArrayList<Event> events; 			// the node's events list
-		private ArrayList<Event> myEvents; 			// the events generates by this node
+		private ArrayList<Event> myEvents; 			// all the events generates by this node (needed for retransmission)
 		
-		private ArrayList<Event> myNewEvents; 			// the events generates by this node
+		private HashMap<Event, Boolean> myNewEvents;		// if hash value is false, 
+															// it means that these mine events have not been gossiped yet
+															// if the map is not empty, it means that it contains my events 
+															// which were not received by all other nodes
 		
 		private ArrayList<String> eventIds; 		// the node's digest events list
 		private ArrayList<Membership> subs; 		// the node's subscriptions list
@@ -79,7 +82,7 @@ public class Node {
 		this.events = new ArrayList<>();
 		this.myEvents = new ArrayList<>();
 		
-		this.myNewEvents = new ArrayList<>();
+		this.myNewEvents = new HashMap<>();
 		
 		this.eventIds = new ArrayList<>();
 		this.subs = new ArrayList<>();
@@ -140,11 +143,15 @@ public class Node {
 				events.add(e);
 			}
 			
-			events.addAll(this.myNewEvents);
-			for (Event e : this.myNewEvents) {
-				this.eventIds.add(e.getId());
+			// gossip my new events
+			for (Event e : this.myNewEvents.keySet()) {
+				if (!this.myNewEvents.get(e)) {
+					events.add(e);
+					this.eventIds.add(e.getId());
+					// set new event as Gossiped
+					this.myNewEvents.put(e, true);
+				}
 			}
-			this.myNewEvents.clear();
 			
 			
 			this.events = events;
@@ -158,23 +165,26 @@ public class Node {
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
 
-			int view_size = this.view.size();
-
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
 			
-			ArrayList<Integer> destinations = randomDestinations(view_size);
-			for (int i = 0; i < fanout && i < view_size ; i++) {
-				Integer destinationId = this.view.get(destinations.get(i)).getNodeId();
-				
-				for (RepastEdge<Object> edge : network.getOutEdges(this)) {
-					network.removeEdge(edge);
+			LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
+			int i=0;
+			while (i<Math.min(fanout,  this.view.size())) {
+				int rnd = RandomHelper.nextIntFromTo(0,  this.view.size() -1);
+				if (!selected.contains(rnd)) {
+					Integer destinationId = this.view.get(rnd).getNodeId();
+					
+					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
+						network.removeEdge(edge);
+					}
+					Node destination = this.router.locateNode(destinationId);
+					network.addEdge(this, destination);
+					
+					router.sendGossip(gossip, this.id, this.view.get(rnd).getNodeId());
+					i++;
 				}
-				Node destination = this.router.locateNode(destinationId);
-				network.addEdge(this, destination);
 				
-				router.sendGossip(gossip, this.id, this.view.get(destinations.get(i)).getNodeId());
-
 			}
 
 			this.events.clear();
@@ -188,12 +198,12 @@ public class Node {
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
 		this.myEvents.add(event);
-		this.myNewEvents.add(event);
+		// tell to itself that this event is new and was not gossiped yet
+		this.myNewEvents.put(event, false);
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
-		setNewEventThisRoundet(true);
 		return event.getId();
 	}
 
@@ -372,7 +382,7 @@ public class Node {
 			}
 
 			// if there are events that other nodes have seen
-			// but this node did not, schedule a retrieve action
+			// but this node did not, schedule a retrieve actionBoolean
 			// where the sender of the message containing that id is contacted
 			for (String dig : gossip.getEventIds()) {
 				if (!this.eventIds.contains(dig)) {
@@ -627,15 +637,7 @@ public class Node {
 	}
 	
 	public void deliver(Event e) {
-		this.appNode.signalEventReception(e.getId(), this.id);
-	}
-
-	public void setNewEventThisRoundet(boolean value) {
-		this.newEventThisRound = value;
-	}
-
-	public boolean getNewEventThisRound() {
-		return this.newEventThisRound;
+		this.appNode.signalEventReception(e, this.id);
 	}
 
 	public NodeState getNodeState() {
@@ -650,12 +652,15 @@ public class Node {
 		this.appNode = appNode;
 	}
 	
-	private ArrayList<Integer> randomDestinations(int size){
-		ArrayList<Integer> numbers = new ArrayList<>();
-		for (int i=0; i<size; i++) {
-			numbers.add(i);
-		}
-		Collections.shuffle(numbers);
-		return numbers;
+	public void deleteNew(Event e) {
+		this.myNewEvents.remove(e);
+	}
+	
+	/**
+	 * Tells if the events generated by this node, 
+	 * were received by all the other nodes or not
+	 */
+	public boolean hasNewEvents() {
+		return this.myNewEvents.size() > 0;
 	}
 }

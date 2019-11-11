@@ -17,7 +17,6 @@ public class AppNode {
 	private int n_messages; 			// the number of messages that we want in the simulation
 	private int churn_rate; 			// the churn rate that we want in the simulation
 	private int unsub_rate; 			// the unsub rate that we want in the simulation
-	private int previus_sender;
 	
 	// contains the messages that are broadcasted in the current round
 	// the key is the id of the message and the element contains a set 
@@ -31,7 +30,6 @@ public class AppNode {
 		this.n_messages = n_messages;
 		this.churn_rate = churn_rate;
 		this.unsub_rate = unsub_rate;
-		this.previus_sender = -1;
 	}
 
 	public void addNode(Node node) {
@@ -52,9 +50,7 @@ public class AppNode {
 				rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 			}
 
-			this.previus_sender = rnd;
-			String eventId = this.nodes.get(rnd).broadcast();
-			
+			String eventId = this.nodes.get(rnd).broadcast();			
 			HashSet<Integer> receivers = new HashSet<Integer>();
 			receivers.add(nodes.get(rnd).getId());
 			this.messages.put(eventId, receivers);
@@ -104,14 +100,15 @@ public class AppNode {
 		}
 	}
 	
-	public void signalEventReception(String eventId, int receiver) {
+	public void signalEventReception(Event event, int receiver) {
+		String eventId = event.getId();
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.remove(eventId);
 			receivers.add(receiver);
 			if (receivers.size() == this.node_count) {
 				String[] parts = eventId.split("_");
 				int eventGeneratorNodeId = Integer.parseInt(parts[0]);
-				this.nodes.get(eventGeneratorNodeId).setNewEventThisRoundet(false);
+				this.nodes.get(eventGeneratorNodeId).deleteNew(event);
 			}else {
 				this.messages.put(eventId, receivers);
 			}

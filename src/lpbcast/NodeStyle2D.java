@@ -16,7 +16,7 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 			return Color.RED;
 		} else if (node.getNodeState() == NodeState.UNSUB) {
 			return Color.MAGENTA; // its like a purple
-		} else if (node.getNewEventThisRound()) {
+		} else if (node.hasNewEvents()) {
 			return Color.GREEN;
 		} else
 			return Color.BLACK;
