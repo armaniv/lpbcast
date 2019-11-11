@@ -309,9 +309,9 @@ public class Node {
 					}
 				}
 
+				ArrayList<Membership> view = new ArrayList<Membership>(this.view);
 				while (this.subs.size() > this.max_m) {
 					Membership target = selectProcess(this.subs);
-					ArrayList<Membership> view = new ArrayList<Membership>(this.view);
 					view.remove(target);
 					this.subs = view;
 				}
