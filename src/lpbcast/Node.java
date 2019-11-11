@@ -574,21 +574,24 @@ public class Node {
 		this.unSubs.add(unsub);
 
 		Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-		int view_size = this.view.size();
-
-		LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
-		for (int i = 0; i < fanout && i < view_size; i++) {
-			int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-			Integer destinationId = this.view.get(rnd).getNodeId();
-			if (selected_nodes.add(destinationId)) {
-				router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
-
-			} else {
-				while (!selected_nodes.add(this.view.get(rnd).getNodeId())) {
-					rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
+		
+		LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
+		int i=0;
+		while (i<Math.min(fanout,  this.view.size())) {
+			int rnd = RandomHelper.nextIntFromTo(0,  this.view.size() -1);
+			if (!selected.contains(rnd)) {
+				Integer destinationId = this.view.get(rnd).getNodeId();
+				
+				for (RepastEdge<Object> edge : network.getOutEdges(this)) {
+					network.removeEdge(edge);
 				}
+				Node destination = this.router.locateNode(destinationId);
+				network.addEdge(this, destination);
+				
+				router.sendGossip(gossip, this.id, this.view.get(rnd).getNodeId());
+				i++;
 			}
+			
 		}
 	}
 
