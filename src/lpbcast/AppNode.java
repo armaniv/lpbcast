@@ -44,13 +44,7 @@ public class AppNode {
 	 */
 	@ScheduledMethod(start = 2, interval = 1, priority = 2)
 	public void generateBroadcast() {
-		// reset newEventThisRound of the previous sender
-//		if (this.previus_sender != -1 && n_messages >= 0) {
-//			this.nodes.get(previus_sender).setNewEventThisRoundet(false);
-//		}
 		// generate a new message
-		System.out.println("-----------tick-----------------");
-		
 		if (n_messages > 0) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 
@@ -120,16 +114,6 @@ public class AppNode {
 				this.nodes.get(eventGeneratorNodeId).setNewEventThisRoundet(false);
 			}else {
 				this.messages.put(eventId, receivers);
-			}
-		}
-	}
-	
-	@ScheduledMethod(start = 35)
-	public void asd() {
-		for (String key : this.messages.keySet()) {
-			HashSet<Integer> receivers = this.messages.get(key);
-			if (receivers.size() != this.node_count) {
-				System.out.println(key + " " + receivers.size());
 			}
 		}
 	}

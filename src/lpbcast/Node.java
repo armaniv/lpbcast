@@ -48,6 +48,9 @@ public class Node {
 		private ArrayList<Membership> view; 		// the node's view
 		private ArrayList<Event> events; 			// the node's events list
 		private ArrayList<Event> myEvents; 			// the events generates by this node
+		
+		private ArrayList<Event> myNewEvents; 			// the events generates by this node
+		
 		private ArrayList<String> eventIds; 		// the node's digest events list
 		private ArrayList<Membership> subs; 		// the node's subscriptions list
 		private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
@@ -75,6 +78,9 @@ public class Node {
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
 		this.myEvents = new ArrayList<>();
+		
+		this.myNewEvents = new ArrayList<>();
+		
 		this.eventIds = new ArrayList<>();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
@@ -127,11 +133,20 @@ public class Node {
 		round++;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
+			
 			ArrayList<Event> events = new ArrayList<Event>();
 			for (Event e : this.events) {
 				e.incrementAge();
 				events.add(e);
 			}
+			
+			events.addAll(this.myNewEvents);
+			for (Event e : this.myNewEvents) {
+				this.eventIds.add(e.getId());
+			}
+			this.myNewEvents.clear();
+			
+			
 			this.events = events;
 
 			// add self to sub
@@ -147,41 +162,20 @@ public class Node {
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
-
-			LinkedHashSet<Integer> selected_nodes = new LinkedHashSet<>(); // support list
+			
+			ArrayList<Integer> destinations = randomDestinations(view_size);
 			for (int i = 0; i < fanout && i < view_size ; i++) {
-				int rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-				Integer destinationId = this.view.get(rnd).getNodeId();
+				Integer destinationId = this.view.get(destinations.get(i)).getNodeId();
 				
-				if (selected_nodes.add(destinationId)) {
-
-					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
-						network.removeEdge(edge);
-					}
-					Node destination = this.router.locateNode(destinationId);
-					network.addEdge(this, destination);
-					
-					router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
-					System.out.print(this.id +  "-> " + view.get(rnd).getNodeId() + ", ");
-
-				} else {
-					int n_iter = 0;
-					while (!selected_nodes.add(this.view.get(rnd).getNodeId()) && n_iter < 3) {
-						n_iter ++;
-						rnd = RandomHelper.nextIntFromTo(0, view_size - 1);
-						destinationId = this.view.get(rnd).getNodeId();
-
-						for (RepastEdge<Object> edge : network.getOutEdges(this)) {
-							network.removeEdge(edge);
-						}
-						Node destination = this.router.locateNode(destinationId);
-						network.addEdge(this, destination);
-						router.sendGossip(gossip, this.id, view.get(rnd).getNodeId());
-						System.out.print(this.id +  "->! " + view.get(rnd).getNodeId() + ", ");
-					}
+				for (RepastEdge<Object> edge : network.getOutEdges(this)) {
+					network.removeEdge(edge);
 				}
+				Node destination = this.router.locateNode(destinationId);
+				network.addEdge(this, destination);
+				
+				router.sendGossip(gossip, this.id, this.view.get(destinations.get(i)).getNodeId());
+
 			}
-			System.out.println(this.id + "sends ["+ gossip.toString() + "]");
 
 			this.events.clear();
 		}
@@ -194,13 +188,11 @@ public class Node {
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
 		this.myEvents.add(event);
-		this.events.add(event);
-		this.eventIds.add(event.getId());
+		this.myNewEvents.add(event);
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
-		System.out.println("node " + this.id + " generates event " + this.eventIdCounter + "\n");
 		setNewEventThisRoundet(true);
 		return event.getId();
 	}
@@ -212,9 +204,7 @@ public class Node {
 	 */
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
-			
-			System.out.println(this.id  + "<-" + gossip.getSender());
-			
+
 			// remove obsolete unsubs
 			ArrayList<Unsubscription> oldUnSubs = new ArrayList<>();
 			for (Unsubscription unsub : gossip.getUnSubs()) {
@@ -343,18 +333,7 @@ public class Node {
 				
 				if (!this.eventIds.contains(e.getId())) {
 					this.events.add(e);
-					/*
-					// if this was an event which I was waiting for
-					// I delete it from the retrieve buffer
-					for (int k=0; k<this.retrieveBuf.size(); k++) {
-						Element elem = this.retrieveBuf.get(k);
-						if (elem.getId() == e.getId()) {
-							this.retrieveBuf.remove(k);
-						}
-					}
-					*/
 					// deliver event to the application
-					System.out.println("\t" + this.id  + " deliver " + e.getId());
 					this.deliver(e);
 					this.eventIds.add(e.getId());
 				}
@@ -411,7 +390,7 @@ public class Node {
 				}
 			}
 
-			// randomly truncates eventIds
+			// truncates eventIds removing oldest elements
 			while (this.eventIds.size() > this.max_m) {
 				this.eventIds.remove(0);
 			}
@@ -479,6 +458,8 @@ public class Node {
 				found = true;
 			} else {
 				target.incrementFrequency();
+				list.remove(rnd);
+				list.add(target);
 			}
 		}
 		return target;
@@ -495,7 +476,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		// if still had not received the event
 		// ask the sender for it
-		if (!this.eventIds.contains(element.getId()) /*&& this.retrieveBuf.contains(element)*/) {
+		if (!this.eventIds.contains(element.getId())) {
 			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender());
 			if (e == null) {
 				// if we don't receive an answer from the sender
@@ -523,7 +504,7 @@ public class Node {
 	public void requestEventFromRandom(Element element) {
 		// if still had not received the event
 		// ask the a random node for it
-		if (!this.eventIds.contains(element.getId()) /*&& this.retrieveBuf.contains(element)*/) {
+		if (!this.eventIds.contains(element.getId())) {
 			int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 			String eventId = element.getId();
 			Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());
@@ -667,5 +648,14 @@ public class Node {
 	
 	public void setAppNode(AppNode appNode) {
 		this.appNode = appNode;
+	}
+	
+	private ArrayList<Integer> randomDestinations(int size){
+		ArrayList<Integer> numbers = new ArrayList<>();
+		for (int i=0; i<size; i++) {
+			numbers.add(i);
+		}
+		Collections.shuffle(numbers);
+		return numbers;
 	}
 }

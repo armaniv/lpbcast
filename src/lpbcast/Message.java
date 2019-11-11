@@ -9,7 +9,6 @@ public class Message {
 	private ArrayList<String> eventIds; 		// the message's digest events list
 	private ArrayList<Membership> subs; 		// the message's subscriptions list
 	private ArrayList<Unsubscription> unSubs; 	// the message's un-subscriptions list
-	private static int id = 0;
 
 	public Message(Integer sender, ArrayList<Event> events, ArrayList<String> eventIds, ArrayList<Membership> subs,
 			ArrayList<Unsubscription> unSubs) {
@@ -18,7 +17,6 @@ public class Message {
 		this.eventIds = eventIds;
 		this.subs = subs;
 		this.unSubs = unSubs;
-		this.id++;
 	}
 
 	public Integer getSender() {
@@ -39,15 +37,5 @@ public class Message {
 
 	public ArrayList<Unsubscription> getUnSubs() {
 		return unSubs;
-	}
-
-	
-	public String toString() {
-		String ato = "";
-		for (Event e : this.events) {
-			ato = e.getId() + " ";
-		}
-			
-		return ato;
 	}
 }
