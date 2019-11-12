@@ -43,6 +43,12 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="msg_per_round" displayName="Msg per Round" type="int" 
+						defaultValue="1" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
 				<parameter name="frequency_purging" displayName="Freq purging opt" type="boolean" 
 						defaultValue="true" 
 						isReadOnly="false" 
@@ -57,13 +63,13 @@
 									
 		/>
 				<parameter name="churn_rate" displayName="Percent churn rate" type="int" 
-						defaultValue="0" 
+						defaultValue="3" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="unsub_rate" displayName="Percent unsub rate" type="int" 
-						defaultValue="0" 
+						defaultValue="3" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

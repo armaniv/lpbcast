@@ -18,6 +18,12 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="msg_per_round" displayName="Msg per Round" type="int" 
+						defaultValue="10" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
 				<parameter name="randomSeed" displayName="Default Random Seed" type="int" 
 						defaultValue="1016640491" 
 						isReadOnly="false" 
@@ -32,7 +38,7 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="90" 
+						defaultValue="100" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

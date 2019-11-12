@@ -34,6 +34,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int round_k = params.getInteger("round_k");
 		int round_r = params.getInteger("round_r");
 		int n_messages = params.getInteger("n_messages");
+		int msg_per_round = params.getInteger("msg_per_round");
 		int churn_rate = params.getInteger("churn_rate");
 		int unsub_rate = params.getInteger("unsub_rate");
 		boolean age_purging = params.getBoolean("age_purging");
@@ -53,7 +54,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		Router router = new Router();
 
 		// create an agent that 'manages' the other agents (node)
-		AppNode appNode = new AppNode(node_count, n_messages, churn_rate, unsub_rate);
+		AppNode appNode = new AppNode(node_count, n_messages, msg_per_round,churn_rate, unsub_rate);
 		context.add(appNode);
 
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();

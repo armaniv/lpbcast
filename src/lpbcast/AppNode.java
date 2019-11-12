@@ -15,6 +15,7 @@ public class AppNode {
 	private int node_count; 			// the number of nodes in the context
 	private HashMap<Integer, Node> nodes; 		// the nodes in the context
 	private int n_messages; 			// the number of messages that we want in the simulation
+	private int msg_per_round;			// the number of messages to be generated per round
 	private int churn_rate; 			// the churn rate that we want in the simulation
 	private int unsub_rate; 			// the unsub rate that we want in the simulation
 	
@@ -23,13 +24,14 @@ public class AppNode {
 	// of the ids of the nodes that have received that message
 	private HashMap<String, HashSet<Integer>> messages;	
 	
-	public AppNode(int node_count, int n_messages, int churn_rate, int unsub_rate) {
+	public AppNode(int node_count, int n_messages, int msg_per_round, int churn_rate, int unsub_rate) {
 		this.node_count = node_count;
 		this.nodes = new HashMap<Integer, Node>();
 		this.messages = new HashMap<String, HashSet<Integer>>();
 		this.n_messages = n_messages;
 		this.churn_rate = churn_rate;
 		this.unsub_rate = unsub_rate;
+		this.msg_per_round = msg_per_round;
 	}
 
 	public void addNode(Node node) {
@@ -44,17 +46,19 @@ public class AppNode {
 	public void generateBroadcast() {
 		// generate a new message
 		if (n_messages > 0) {
-			int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
+			for (int i=0; i<msg_per_round && n_messages>0; i++) {
+				int rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 
-			while (this.nodes.get(rnd).getNodeState() != NodeState.SUB) {
-				rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
+				while (this.nodes.get(rnd).getNodeState() != NodeState.SUB) {
+					rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
+				}
+
+				String eventId = this.nodes.get(rnd).broadcast();			
+				HashSet<Integer> receivers = new HashSet<Integer>();
+				receivers.add(nodes.get(rnd).getId());
+				this.messages.put(eventId, receivers);	
+				n_messages--;
 			}
-
-			String eventId = this.nodes.get(rnd).broadcast();			
-			HashSet<Integer> receivers = new HashSet<Integer>();
-			receivers.add(nodes.get(rnd).getId());
-			this.messages.put(eventId, receivers);
-			n_messages--;
 		}
 	}
 
