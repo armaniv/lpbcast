@@ -170,18 +170,25 @@ public class Node {
 			
 			LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
 			int i=0;
-			while (i<Math.min(fanout,  this.view.size())) {
+			int min = Math.min(fanout,  this.view.size());
+			while (i<min) {
 				int rnd = RandomHelper.nextIntFromTo(0,  this.view.size() -1);
-				if (!selected.contains(rnd)) {
-					Integer destinationId = this.view.get(rnd).getNodeId();
-					
+				Integer destinationId = this.view.get(rnd).getNodeId();
+				// System.out.println(this.id + " view " + this.view.toString());
+				if (!selected.contains(destinationId) && destinationId != this.id) {
+					selected.add(destinationId);
 					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 						network.removeEdge(edge);
 					}
 					Node destination = this.router.locateNode(destinationId);
 					network.addEdge(this, destination);
 					
-					router.sendGossip(gossip, this.id, this.view.get(rnd).getNodeId());
+					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+					ScheduleParameters scheduleParameters = ScheduleParameters
+							.createOneTime(schedule.getTickCount() + 1);
+					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
+					System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
+//					this.router.sendGossip(gossip, this.id, destination.getId());
 					i++;
 				}
 				
@@ -197,6 +204,7 @@ public class Node {
 	 */
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
+		System.out.println(id + " generates " + event.getId());
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
 		this.myNewEvents.put(event, false);
@@ -213,6 +221,7 @@ public class Node {
 	 * @param gossip The gossip message received
 	 */
 	public void receive(Message gossip) {
+		System.out.println(this.id + " < RECEIVES > from " + gossip.getSender() + " " + gossip.getEvents().toString());
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
 			// remove obsolete unsubs
@@ -250,10 +259,12 @@ public class Node {
 			for (Membership n_sub : gossip.getSubs()) {
 				if (n_sub.getNodeId() != this.id) {
 
-					if (!this.view.contains(n_sub)) {
+					Membership n = findMembership(n_sub, this.view);
+					if (n == null) {
 						this.view.add(n_sub);
 
-						if (!this.subs.contains(n_sub)) {
+						n = findMembership(n_sub, this.subs);
+						if (n == null) {
 							this.subs.add(n_sub);
 						}
 					}
@@ -265,36 +276,29 @@ public class Node {
 				ArrayList<Membership> gossipSubs = gossip.getSubs();
 				for (int j = 0; j < gossipSubs.size(); j++) {
 					Membership gossipSub = gossipSubs.get(j);
-					int old_freq = gossipSub.getFrequency();
 
 					// if the membership received is in node's view increment
 					// the frequency of the membership contained in view
-					if (this.view.contains(gossipSub)) {
-						int i = this.view.indexOf(gossipSub);
-						Membership myMembership = this.view.get(i);
-						myMembership.incrementFrequency();
-						this.view.remove(i);
-						this.view.add(myMembership);
+					Membership m = findMembership(gossipSub, this.view);
+					if (m != null) {
+						m.setFrequency(Math.max(gossipSub.getFrequency(), m.getFrequency()) + 1);
 					} else {
-						// otherwise add the membership in the
-						// view and increment its frequency
-						gossipSub.incrementFrequency();
-						this.view.add(gossipSub);
+						if (gossipSub.getNodeId() != this.id) {
+							// otherwise add the membership in the
+							// view and increment its frequency if it is not myself
+							gossipSub.incrementFrequency();
+							this.view.add(gossipSub);
+						}
 					}
 					
 					// if the received membership is in the node's subscriptions
 					// increment its frequency in the subs buffer
-					if (this.subs.contains(gossipSub)) {
-						int i = this.subs.indexOf(gossipSub);
-						Membership myMembership = this.subs.get(i);
-						myMembership.incrementFrequency();
-						this.subs.remove(i);
-						this.subs.add(myMembership);
+					m = findMembership(gossipSub, this.subs);
+					if (m != null) {
+						m.setFrequency(Math.max(gossipSub.getFrequency(), m.getFrequency()) + 1);
 					} else {
 						// otherwise we just add it in the subs and update the frequency
-						if (gossipSub.getFrequency() == old_freq) {
-							gossipSub.incrementFrequency();
-						}
+						gossipSub.incrementFrequency();
 						this.subs.add(gossipSub);
 					}
 				}
@@ -342,6 +346,7 @@ public class Node {
 				Event e = gossipEvents.get(i);
 				
 				if (!this.eventIds.contains(e.getId())) {
+					//System.out.println(this.id + " # DELIVERS # " + e.getId() + " through receive() from " + gossip.getSender());
 					this.events.add(e);
 					// deliver event to the application
 					this.deliver(e);
@@ -498,6 +503,7 @@ public class Node {
 			} else {
 				this.events.add(e);
 				this.deliver(e);
+				System.out.println(this.id + " # DELIVERS # " + e.getId() + " from sender");
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
 			}
@@ -529,12 +535,14 @@ public class Node {
 					this.deliver(event);
 					this.eventIds.add(event.getId());
 					this.retrieveBuf.remove(element);
+					System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
 				}
 			} else {
 				this.events.add(event);
 				this.deliver(event);
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
+				System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
 			}
 		}
 	}
@@ -656,7 +664,11 @@ public class Node {
 	}
 	
 	public void deleteNew(Event e) {
-		this.myNewEvents.remove(e);
+		for (Event ev : this.myNewEvents.keySet()) {
+			if (e.getId() == ev.getId()) {
+				this.myNewEvents.remove(ev);
+			}
+		}
 	}
 	
 	/**
@@ -665,5 +677,17 @@ public class Node {
 	 */
 	public boolean hasNewEvents() {
 		return this.myNewEvents.size() > 0;
+	}
+	
+	public Membership findMembership(Membership m, ArrayList<Membership> list) {
+		Membership res = null;
+		for (int i=0; i<list.size(); i++) {
+			Membership n = list.get(i);
+			if (n.getNodeId().equals(m.getNodeId())){
+				res = n;
+				break;
+			}
+		}
+		return res;
 	}
 }

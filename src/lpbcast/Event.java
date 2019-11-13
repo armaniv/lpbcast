@@ -7,10 +7,10 @@ public class Event implements Comparable {
 	private String id; 			// the identifier of a event (creatorId + eventId)
 	private int age; 			// the event's age
 
-	public Event(Integer creatorId, int eventCounter) {
+	public Event(Integer creatorId, int eventId) {
 		this.creatorId = creatorId;
-		this.eventId = eventCounter;
-		this.id = creatorId + "_" + eventCounter;
+		this.eventId = eventId;
+		this.id = creatorId + "_" + eventId;
 		this.age = 0;
 	}
 
@@ -52,5 +52,9 @@ public class Event implements Comparable {
 		} else {
 			return -1;
 		}
+	}
+	
+	public String toString() {
+		return this.getId();
 	}
 }

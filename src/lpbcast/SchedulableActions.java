@@ -3,6 +3,24 @@ package lpbcast;
 import repast.simphony.engine.schedule.IAction;
 
 public class SchedulableActions {
+	
+	public static class ReceiveGossip implements IAction {
+		private Integer sourceNodeId;
+		private Integer destinationNodeId;
+		private Message message;
+		private Router router;
+
+		public ReceiveGossip(Integer sourceNodeId, Integer destinationNodeId, Message message, Router router) {
+			this.sourceNodeId = sourceNodeId;
+			this.destinationNodeId = destinationNodeId;
+			this.message = message;
+			this.router = router;
+		}
+
+		public void execute() {
+			this.router.sendGossip(message, sourceNodeId, destinationNodeId);
+		}
+	}
 
 	/**
 	 * Class to schedule the execution of node's method requestEventFromSender()

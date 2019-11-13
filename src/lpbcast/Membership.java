@@ -16,22 +16,16 @@ public class Membership {
 	public Integer getFrequency() {
 		return this.frequency;
 	}
+	
+	public void setFrequency(Integer freq) {
+		this.frequency = freq;
+	}
 
 	public void incrementFrequency() {
 		this.frequency++;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof Membership) {
-			Membership p = (Membership) o;
-			return (this.nodeId.equals(p.getNodeId()) && this.frequency.equals(p.getFrequency()));
-		} else
-			return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return this.nodeId;
+	public String toString() {
+		return this.nodeId + ":" + this.frequency;
 	}
 }

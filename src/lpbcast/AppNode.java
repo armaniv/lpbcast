@@ -9,6 +9,7 @@ import repast.simphony.engine.schedule.ISchedule;
 import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.random.RandomHelper;
+import repast.simphony.util.ContextUtils;
 
 public class AppNode {
 
@@ -22,12 +23,18 @@ public class AppNode {
 	// contains the messages that are broadcasted in the current round
 	// the key is the id of the message and the element contains a set 
 	// of the ids of the nodes that have received that message
-	private HashMap<String, HashSet<Integer>> messages;	
+	private HashMap<String, HashSet<Integer>> messages;
+	
+	// contains the messages used to analyze the expected number of 
+	// infected processes for a given round with different Fanout values
+	private HashMap<String, HashSet<Integer>> analyzedMessages;
+	private int analyzedRoundCount=0;
 	
 	public AppNode(int node_count, int n_messages, int msg_per_round, int churn_rate, int unsub_rate) {
 		this.node_count = node_count;
 		this.nodes = new HashMap<Integer, Node>();
 		this.messages = new HashMap<String, HashSet<Integer>>();
+		this.analyzedMessages = new HashMap<String, HashSet<Integer>>();
 		this.n_messages = n_messages;
 		this.churn_rate = churn_rate;
 		this.unsub_rate = unsub_rate;
@@ -58,7 +65,15 @@ public class AppNode {
 				receivers.add(nodes.get(rnd).getId());
 				this.messages.put(eventId, receivers);	
 				n_messages--;
+				
+				if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
+					this.analyzedMessages.put(eventId, receivers);
+				}
 			}
+		}
+		
+		if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
+			this.analyzedRoundCount++;
 		}
 	}
 
@@ -105,18 +120,45 @@ public class AppNode {
 	}
 	
 	public void signalEventReception(Event event, int receiver) {
+		System.out.println(receiver + " DELIVERED " + event.getId());
 		String eventId = event.getId();
+		
 		if (this.messages.containsKey(eventId)) {
-			HashSet<Integer> receivers = this.messages.remove(eventId);
+			HashSet<Integer> receivers = this.messages.get(eventId);
 			receivers.add(receiver);
+			
+			System.out.println("msges reception: " + messages.toString());
+			
 			if (receivers.size() == this.node_count) {
+				this.messages.remove(eventId);
 				String[] parts = eventId.split("_");
 				int eventGeneratorNodeId = Integer.parseInt(parts[0]);
 				this.nodes.get(eventGeneratorNodeId).deleteNew(event);
 			}else {
 				this.messages.put(eventId, receivers);
 			}
+			if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
+				this.analyzedMessages.put(eventId, receivers);
+			}
 		}
 	}
+	
+	public double analyzeInfectedProcesses() {
+		int infectedProcesses = 0;
+		for (String eventId : this.analyzedMessages.keySet()) {
+			infectedProcesses = infectedProcesses + this.analyzedMessages.get(eventId).size();
+		}
+		return infectedProcesses/(double)this.analyzedMessages.size();
+	}
+	
+	public int analyzeRoundCount() {
+		return this.analyzedRoundCount;
+	}
+	
+	@ScheduledMethod(start = 2, interval = 1)
+	public void f() {
+		
+	}
+	
 	
 }
