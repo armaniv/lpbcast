@@ -2,10 +2,14 @@ package lpbcast;
 
 import java.util.HashMap;
 
+import repast.simphony.random.RandomHelper;
+
 public class Router {
 	private HashMap<Integer, Node> nodes; // the nodes list
+	private int msg_loss_rate;
 
-	public Router() {
+	public Router(int msg_loss_rate) {
+		this.msg_loss_rate = msg_loss_rate;
 	}
 
 	public void setNodes(HashMap<Integer, Node> nodes) {
@@ -14,7 +18,15 @@ public class Router {
 
 	// Send a gossip message to a destination node
 	public void sendGossip(Message gossip, Integer sourceNodeId, Integer destinationNodeId) {
-		nodes.get(destinationNodeId).receive(gossip);
+		double rnd = RandomHelper.nextDoubleFromTo(0, 1);
+		double prob = this.msg_loss_rate / (double)100;
+		
+		if(prob > 0 && rnd < prob ) {
+			//message is lost
+		}
+		else{
+			nodes.get(destinationNodeId).receive(gossip);
+		}
 	}
 
 	// Request an event to a node that might be different from the originator

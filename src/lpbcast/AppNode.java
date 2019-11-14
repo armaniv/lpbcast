@@ -120,14 +120,14 @@ public class AppNode {
 	}
 	
 	public void signalEventReception(Event event, int receiver) {
-		System.out.println(receiver + " DELIVERED " + event.getId());
+		// System.out.println(receiver + " DELIVERED " + event.getId());
 		String eventId = event.getId();
 		
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.get(eventId);
 			receivers.add(receiver);
 			
-			System.out.println("msges reception: " + messages.toString());
+			// System.out.println("msges reception: " + messages.toString());
 			
 			if (receivers.size() == this.node_count) {
 				this.messages.remove(eventId);

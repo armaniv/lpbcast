@@ -38,7 +38,7 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="3" 
+						defaultValue="1" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

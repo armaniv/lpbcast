@@ -197,7 +197,7 @@ public class Node {
 					ScheduleParameters scheduleParameters = ScheduleParameters
 							.createOneTime(schedule.getTickCount() + 1);
 					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
-					System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
+					//System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
 //					this.router.sendGossip(gossip, this.id, destination.getId());
 					i++;
 				}
@@ -214,7 +214,7 @@ public class Node {
 	 */
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
-		System.out.println(id + " generates " + event.getId());
+		//System.out.println(id + " generates " + event.getId());
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
 		this.myNewEvents.add(new Pair(event, false));
@@ -231,7 +231,7 @@ public class Node {
 	 * @param gossip The gossip message received
 	 */
 	public void receive(Message gossip) {
-		System.out.println(this.id + " < RECEIVES > from " + gossip.getSender() + " " + gossip.getEvents().toString());
+		//System.out.println(this.id + " < RECEIVES > from " + gossip.getSender() + " " + gossip.getEvents().toString());
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
 			// remove obsolete unsubs
@@ -513,7 +513,7 @@ public class Node {
 			} else {
 				this.events.add(e);
 				this.deliver(e);
-				System.out.println(this.id + " # DELIVERS # " + e.getId() + " from sender");
+				//System.out.println(this.id + " # DELIVERS # " + e.getId() + " from sender");
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
 			}
@@ -545,14 +545,14 @@ public class Node {
 					this.deliver(event);
 					this.eventIds.add(event.getId());
 					this.retrieveBuf.remove(element);
-					System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
+					//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
 				}
 			} else {
 				this.events.add(event);
 				this.deliver(event);
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
-				System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
+				//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
 			}
 		}
 	}
