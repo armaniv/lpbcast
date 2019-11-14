@@ -665,7 +665,7 @@ public class Node {
 	
 	public void deleteNew(Event e) {
 		for (Event ev : this.myNewEvents.keySet()) {
-			if (e.getId() == ev.getId()) {
+			if (e.getId().contentEquals(ev.getId())) {
 				this.myNewEvents.remove(ev);
 			}
 		}
