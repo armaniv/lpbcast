@@ -3,11 +3,12 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 import lpbcast.SchedulableActions.*;
-
+import lpbcast.Utilities.Pair;
 import repast.simphony.context.Context;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ISchedule;
@@ -48,11 +49,9 @@ public class Node {
 		private ArrayList<Membership> view; 		// the node's view
 		private ArrayList<Event> events; 			// the node's events list
 		private ArrayList<Event> myEvents; 			// all the events generates by this node (needed for retransmission)
-		
-		private HashMap<Event, Boolean> myNewEvents;		// if hash value is false, 
-															// it means that these mine events have not been gossiped yet
-															// if the map is not empty, it means that it contains my events 
-															// which were not received by all other nodes
+		private ArrayList<Pair<Event, Boolean>> myNewEvents;	// if hash value is false it means that these mine events have not been gossiped yet
+																// if the map is not empty, it means that it contains my events 
+																// which were not received by all other nodes
 		
 		private ArrayList<String> eventIds; 		// the node's digest events list
 		private ArrayList<Membership> subs; 		// the node's subscriptions list
@@ -82,7 +81,7 @@ public class Node {
 		this.events = new ArrayList<>();
 		this.myEvents = new ArrayList<>();
 		
-		this.myNewEvents = new HashMap<>();
+		this.myNewEvents = new ArrayList<>();
 		
 		this.eventIds = new ArrayList<>();
 		this.subs = new ArrayList<>();
@@ -144,12 +143,23 @@ public class Node {
 			}
 			
 			// gossip my new events
-			for (Event e : this.myNewEvents.keySet()) {
+			/*for (Event e : this.myNewEvents.keySet()) {
 				if (!this.myNewEvents.get(e)) {
 					events.add(e);
 					this.eventIds.add(e.getId());
 					// set new event as Gossiped
 					this.myNewEvents.put(e, true);
+				}
+			}*/
+			
+			for (Pair pair : this.myNewEvents) {
+				Event e = (Event) pair.getX();
+				boolean b = (Boolean) pair.getY();
+				if (!b) {
+					events.add(e);
+					this.eventIds.add(e.getId());
+					// set new event as Gossiped
+					pair.setY(true);
 				}
 			}
 			
@@ -207,7 +217,7 @@ public class Node {
 		System.out.println(id + " generates " + event.getId());
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
-		this.myNewEvents.put(event, false);
+		this.myNewEvents.add(new Pair(event, false));
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
@@ -664,10 +674,19 @@ public class Node {
 	}
 	
 	public void deleteNew(Event e) {
-		for (Event ev : this.myNewEvents.keySet()) {
+		int toRemove = -1;
+		for (int i = 0; i < this.myNewEvents.size(); i++)
+		{
+			Pair pair = this.myNewEvents.get(i);
+			Event ev = (Event) pair.getX();
 			if (e.getId().contentEquals(ev.getId())) {
-				this.myNewEvents.remove(ev);
+				toRemove = i;
 			}
+		}
+		
+		if(toRemove!=-1)
+		{
+			this.myNewEvents.remove(toRemove);
 		}
 	}
 	
