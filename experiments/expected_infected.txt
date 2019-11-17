@@ -1,0 +1,100 @@
+
+
+(*) calculated on 20 BMessages
+
+- F = 3
+- Node Count = 125
+- Msg per Round = 1
+- NO Optimizations
+- View Size = 30
+- Events Size = 30
+
+round: 1 avg: 3
+round: 2 avg: 11
+round: 3 avg: 32
+round: 4 avg: 69
+round: 5 avg: 100
+round: 6 avg: 112
+round: 7 avg: 114
+round: 8 avg: 115
+round: 9 avg: 116
+round: 10 avg: 117
+round: 11 avg: 119
+round: 12 avg: 121
+round: 13 avg: 122
+round: 14 avg: 123
+
+
+(*) calculated on 20 BMessages
+
+- F = 4
+- Node Count = 125
+- Msg per Round = 1
+- NO Optimizations
+- View Size = 30
+- Events Size = 30
+
+round: 1 avg: 3
+round: 2 avg: 11
+round: 3 avg: 31
+round: 4 avg: 65
+round: 5 avg: 97
+round: 6 avg: 111
+round: 7 avg: 114
+round: 8 avg: 115
+round: 9 avg: 116
+round: 10 avg: 117
+round: 11 avg: 119
+round: 12 avg: 121
+round: 13 avg: 123
+
+(*) calculated on 20 BMessages
+
+- F = 5
+- Node Count = 125
+- Msg per Round = 1
+- NO Optimizations
+- View Size = 30
+- Events Size = 30
+
+round: 1 avg: 5
+round: 2 avg: 26
+round: 3 avg: 83
+round: 4 avg: 119
+round: 5 avg: 122
+round: 6 avg: 123
+round: 10 avg: 124
+round: 11 avg: 125
+round: 12 avg: 126
+
+
+(*) calculated on 45 BMessages, after 20 rounds:
+
+- Node Count = 125
+- Msg per Round = 5
+- NO Optimizations
+- View Size = 30
+- Events Size = 30
+- F = 3
+
+round: 1 avg: 3
+round: 2 avg: 11
+round: 3 avg: 31
+round: 4 avg: 67
+round: 5 avg: 98
+round: 6 avg: 110
+round: 7 avg: 113
+round: 8 avg: 114
+round: 9 avg: 115
+round: 10 avg: 116
+round: 11 avg: 118
+round: 12 avg: 121
+round: 13 avg: 123
+round: 14 avg: 124
+
+
+
+
+
+
+

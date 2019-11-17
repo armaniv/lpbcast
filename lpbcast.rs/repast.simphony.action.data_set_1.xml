@@ -1,8 +1,7 @@
 <repast.simphony.data2.engine.DataSetDescriptor simphonyVersion="2.7.0">
-  <name>ExpectedInfectedProcesses</name>
-  <type>NON_AGGREGATE</type>
-  <sourceType>lpbcast.AppNode</sourceType>
-  <inclTick>false</inclTick>
+  <name>DeliveryRatio</name>
+  <type>AGGREGATE</type>
+  <inclTick>true</inclTick>
   <inclBatchRun>false</inclBatchRun>
   <inclRandomSeed>false</inclRandomSeed>
   <scheduleParams>
@@ -12,24 +11,17 @@
     <pType>LAST</pType>
     <duration>-1.0</duration>
     <frequency>REPEAT</frequency>
-    <hashCode>-1662381531</hashCode>
+    <hashCode>-1043421951</hashCode>
   </scheduleParams>
   <atEnd>false</atEnd>
   <methodDataSources class="linked-hash-map">
     <entry>
-      <string>RoundCount</string>
+      <string>DeliveryRatio</string>
       <repast.simphony.data2.engine.MethodDataSourceDefinition>
-        <id>RoundCount</id>
-        <className>lpbcast.AppNode</className>
-        <methodName>analyzeRoundCount</methodName>
-      </repast.simphony.data2.engine.MethodDataSourceDefinition>
-    </entry>
-    <entry>
-      <string>InfectedProcesses</string>
-      <repast.simphony.data2.engine.MethodDataSourceDefinition>
-        <id>InfectedProcesses</id>
-        <className>lpbcast.AppNode</className>
-        <methodName>analyzeInfectedProcesses</methodName>
+        <id>DeliveryRatio</id>
+        <className>lpbcast.Node</className>
+        <methodName>getAnalyzedDeliveryRatio</methodName>
+        <aggType>MEAN</aggType>
       </repast.simphony.data2.engine.MethodDataSourceDefinition>
     </entry>
   </methodDataSources>

@@ -82,6 +82,7 @@
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
 						defaultValue="20" 
+						defaultValue="30" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

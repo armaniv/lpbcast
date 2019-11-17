@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <parameters>
 					<parameter name="fanout" displayName="Fanout" type="int" 
+<<<<<<< HEAD
+						defaultValue="4" 
+=======
 						defaultValue="3" 
+>>>>>>> 26a1581a83ab340d75061ac340b9ae2a2fd91a7d
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -44,7 +48,11 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="800"
+<<<<<<< HEAD
+						defaultValue="800" 
+=======
+						defaultValue="1000" 
+>>>>>>> 26a1581a83ab340d75061ac340b9ae2a2fd91a7d
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -63,7 +71,11 @@
 						
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
+<<<<<<< HEAD
+						defaultValue="30" 
+=======
 						defaultValue="125" 
+>>>>>>> 26a1581a83ab340d75061ac340b9ae2a2fd91a7d
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -81,7 +93,11 @@
 									
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
+<<<<<<< HEAD
 						defaultValue="20" 
+=======
+						defaultValue="30" 
+>>>>>>> 26a1581a83ab340d75061ac340b9ae2a2fd91a7d
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
