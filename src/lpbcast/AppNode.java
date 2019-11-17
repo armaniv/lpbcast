@@ -1,15 +1,16 @@
 package lpbcast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import lpbcast.SchedulableActions.*;
+import lpbcast.AnalyzedMessage;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ISchedule;
 import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.random.RandomHelper;
-import repast.simphony.util.ContextUtils;
 
 public class AppNode {
 
@@ -25,20 +26,28 @@ public class AppNode {
 	// of the ids of the nodes that have received that message
 	private HashMap<String, HashSet<Integer>> messages;
 	
-	// contains the messages used to analyze the expected number of 
-	// infected processes for a given round with different Fanout values
-	private HashMap<String, HashSet<Integer>> analyzedMessages;
-	private int analyzedRoundCount=0;
+	private ArrayList<AnalyzedMessage> analyzed_messages;
+	private int analyzed_n_messages = 1;
+	private int analyze_start_consider_messages_at_round = 100;
+	private int analyze_compute_statistics_at_round = 200;
+	
+	private HashMap<String, Integer> from_ratio;
 	
 	public AppNode(int node_count, int n_messages, int msg_per_round, int churn_rate, int unsub_rate) {
 		this.node_count = node_count;
 		this.nodes = new HashMap<Integer, Node>();
 		this.messages = new HashMap<String, HashSet<Integer>>();
-		this.analyzedMessages = new HashMap<String, HashSet<Integer>>();
+		//this.analyzedInfectedPerRound = new HashMap<Integer, HashSet<Integer>>();
+		this.analyzed_messages = new ArrayList<AnalyzedMessage>();
 		this.n_messages = n_messages;
 		this.churn_rate = churn_rate;
 		this.unsub_rate = unsub_rate;
 		this.msg_per_round = msg_per_round;
+		from_ratio = new HashMap<String, Integer>();
+		from_ratio.put("gossip", 0);
+		from_ratio.put("rnd", 0);
+		from_ratio.put("source", 0);
+		from_ratio.put("sender", 0);
 	}
 
 	public void addNode(Node node) {
@@ -60,21 +69,24 @@ public class AppNode {
 					rnd = RandomHelper.nextIntFromTo(0, this.node_count - 1);
 				}
 
-				String eventId = this.nodes.get(rnd).broadcast();			
+				Node receiver = this.nodes.get(rnd);
+				String eventId = receiver.broadcast();			
 				HashSet<Integer> receivers = new HashSet<Integer>();
-				receivers.add(nodes.get(rnd).getId());
+				receivers.add(receiver.getId());
 				this.messages.put(eventId, receivers);	
 				n_messages--;
 				
-				if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
-					this.analyzedMessages.put(eventId, receivers);
+				int tick = (int)RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+				if (tick >= this.analyze_start_consider_messages_at_round &&
+						this.analyzed_n_messages > 0) {
+					AnalyzedMessage message = new AnalyzedMessage(eventId, receiver.getCurrentRound());
+					this.analyzed_messages.add(message);
+					this.analyzed_n_messages--;
 				}
+				
 			}
 		}
-		
-		if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
-			this.analyzedRoundCount++;
-		}
+
 	}
 
 	/**
@@ -119,46 +131,102 @@ public class AppNode {
 		}
 	}
 	
-	public void signalEventReception(Event event, int receiver) {
-		System.out.println(receiver + " DELIVERED " + event.getId());
+	public void signalEventReception(Event event, int receiver, int nodeRound, String from) {
+		// System.out.println(receiver + " DELIVERED " + event.getId());
 		String eventId = event.getId();
 		
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.get(eventId);
 			receivers.add(receiver);
 			
-			System.out.println("msges reception: " + messages.toString());
+			//System.out.println("msges reception: " + messages.toString());
+
 			
 			if (receivers.size() == this.node_count) {
 				this.messages.remove(eventId);
 				String[] parts = eventId.split("_");
 				int eventGeneratorNodeId = Integer.parseInt(parts[0]);
 				this.nodes.get(eventGeneratorNodeId).deleteNew(event);
+				
 			}else {
 				this.messages.put(eventId, receivers);
 			}
-			if (RunEnvironment.getInstance().getCurrentSchedule().getTickCount() >= 100) {
-				this.analyzedMessages.put(eventId, receivers);
-			}
 		}
-	}
-	
-	public double analyzeInfectedProcesses() {
-		int infectedProcesses = 0;
-		for (String eventId : this.analyzedMessages.keySet()) {
-			infectedProcesses = infectedProcesses + this.analyzedMessages.get(eventId).size();
+		
+		Integer from_where = this.from_ratio.get(from);
+		this.from_ratio.put(from, from_where+1);
+		
+		AnalyzedMessage m = AnalyzedMessage.find(analyzed_messages, eventId);
+		if (m != null) {
+			int creationRound = m.creationRound;
+			int passedRounds = nodeRound - creationRound;
+			m.addReceiverAtRound(receiver, passedRounds);
 		}
-		return infectedProcesses/(double)this.analyzedMessages.size();
-	}
-	
-	public int analyzeRoundCount() {
-		return this.analyzedRoundCount;
-	}
-	
-	@ScheduledMethod(start = 2, interval = 1)
-	public void f() {
 		
 	}
 	
+	@ScheduledMethod(start = 250, interval = 0)
+	public void computeExpectedInfectedProcesses() {
+		HashMap<Integer, ArrayList<Integer>> receiversPerRound = new HashMap<Integer, ArrayList<Integer>>();
+
+		for (AnalyzedMessage m : this.analyzed_messages) {
+			for (Integer round : m.receiversPerRound.keySet()) {
+				if (!receiversPerRound.containsKey(round)) {
+					ArrayList<Integer> statistics = new ArrayList<Integer>(2);
+					statistics.add(0, m.receiversPerRound.get(round).size());
+					statistics.add(1, 1);
+					receiversPerRound.put(round, statistics);
+				}else {
+					ArrayList<Integer> statistics = receiversPerRound.get(round);
+					statistics.set(0, statistics.get(0) + m.receiversPerRound.get(round).size());
+					statistics.set(1, statistics.get(1) + 1);
+					receiversPerRound.put(round, statistics);
+				}
+			}
+		}	
+		
+		System.out.println();
+		System.out.println("Expected #InfectedProcesses per Round:");
+		double prev_avg = 0;
+		for (Integer round : receiversPerRound.keySet()) {
+			int sum = receiversPerRound.get(round).get(0);
+			int counters = receiversPerRound.get(round).get(1);
+			double avg = (double)(sum/counters) + prev_avg;
+			prev_avg = avg;
+			System.out.println("round: " + round + " avg: " + avg);
+		}
+		
+		System.out.println();
+		System.out.println("Deliver Type Ratio:");
+		System.out.println(this.from_ratio.toString());
+		
+	}
 	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
