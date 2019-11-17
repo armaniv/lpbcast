@@ -140,7 +140,7 @@ public class Node {
 		if(this.analyzedDelivered == 0 && this.analyzedSentEvents == 0){
 			this.analyzedDeliveryRatio = 0;
 		}
-		if(this.analyzedSentEvents == 0){
+		else if(this.analyzedSentEvents == 0){
 			this.analyzedDeliveryRatio = this.analyzedDelivered;
 		}
 		else {
@@ -159,7 +159,7 @@ public class Node {
 				events.add(e);
 			}
 			
-			for (Pair pair : this.myNewEvents) {
+			for (Pair<Event, Boolean> pair : this.myNewEvents) {
 				Event e = (Event) pair.getX();
 				boolean b = (Boolean) pair.getY();
 				if (!b) {
@@ -205,8 +205,6 @@ public class Node {
 					ScheduleParameters scheduleParameters = ScheduleParameters
 							.createOneTime(schedule.getTickCount());
 					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
-					//System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
-					//this.router.sendGossip(gossip, this.id, destination.getId());
 					i++;
 				}
 				
@@ -225,7 +223,7 @@ public class Node {
 		//System.out.println(id + " generates " + event.getId());
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
-		this.myNewEvents.add(new Pair(event, false));
+		this.myNewEvents.add(new Pair<Event,Boolean>(event, false));
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
@@ -424,15 +422,8 @@ public class Node {
 							schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
 						}
 					}
-				}
-				
+				}	
 			}
-
-			// truncates eventIds removing oldest elements
-//			while (this.eventIds.size() > 400) {
-//				this.eventIds.remove(0);
-//			}
-
 		}
 	}
 
@@ -692,7 +683,7 @@ public class Node {
 		int toRemove = -1;
 		for (int i = 0; i < this.myNewEvents.size(); i++)
 		{
-			Pair pair = this.myNewEvents.get(i);
+			Pair<Event, Boolean> pair = this.myNewEvents.get(i);
 			Event ev = (Event) pair.getX();
 			if (e.getId().contentEquals(ev.getId())) {
 				toRemove = i;

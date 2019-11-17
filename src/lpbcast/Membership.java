@@ -35,6 +35,6 @@ public class Membership {
 	    if (obj == this) return true;
 	    if (!(obj instanceof Membership)) return false;
 	    Membership o = (Membership) obj;
-	    return o.getNodeId() == this.nodeId;
+	    return o.getNodeId().equals(this.nodeId);
 	}
 }
