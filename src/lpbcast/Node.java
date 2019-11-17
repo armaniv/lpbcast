@@ -59,6 +59,11 @@ public class Node {
 		private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
 		private int round; 							// the node's round
 		private int eventIdCounter; 				// count how many events a node created
+		
+		// --- node's variables for statistics
+		private int analyzedDelivered = 0;
+		private int analyzedSentEvents = 0;
+		private double analyzedDeliveryRatio = 0;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
@@ -130,9 +135,22 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 2, interval = 1, priority = 1)
+	@ScheduledMethod(start = 2, interval = 1, priority = 2)
 	public void gossipEmission() {
+		
+		if(this.analyzedDelivered == 0 && this.analyzedSentEvents == 0){
+			this.analyzedDeliveryRatio = 0;
+		}
+		if(this.analyzedSentEvents == 0){
+			this.analyzedDeliveryRatio = this.analyzedDelivered;
+		}
+		else {
+			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
+		}
+		
 		round++;
+		this.analyzedDelivered = 0;
+		this.analyzedSentEvents = 0;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 			
@@ -141,16 +159,6 @@ public class Node {
 				e.incrementAge();
 				events.add(e);
 			}
-			
-			// gossip my new events
-			/*for (Event e : this.myNewEvents.keySet()) {
-				if (!this.myNewEvents.get(e)) {
-					events.add(e);
-					this.eventIds.add(e.getId());
-					// set new event as Gossiped
-					this.myNewEvents.put(e, true);
-				}
-			}*/
 			
 			for (Pair pair : this.myNewEvents) {
 				Event e = (Event) pair.getX();
@@ -174,7 +182,8 @@ public class Node {
 
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-
+			this.analyzedSentEvents = gossip.getEvents().size();
+			
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
 			
@@ -195,10 +204,10 @@ public class Node {
 					
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 					ScheduleParameters scheduleParameters = ScheduleParameters
-							.createOneTime(schedule.getTickCount() + 1);
+							.createOneTime(schedule.getTickCount());
 					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
 					//System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
-//					this.router.sendGossip(gossip, this.id, destination.getId());
+					//this.router.sendGossip(gossip, this.id, destination.getId());
 					i++;
 				}
 				
@@ -359,7 +368,7 @@ public class Node {
 					//System.out.println(this.id + " # DELIVERS # " + e.getId() + " through receive() from " + gossip.getSender());
 					this.events.add(e);
 					// deliver event to the application
-					this.deliver(e);
+					this.deliver(e, "message");
 					this.eventIds.add(e.getId());
 				}
 			}
@@ -416,7 +425,7 @@ public class Node {
 			}
 
 			// truncates eventIds removing oldest elements
-			while (this.eventIds.size() > this.max_m) {
+			while (this.eventIds.size() > /*this.max_m*/ 800) {
 				this.eventIds.remove(0);
 			}
 
@@ -512,7 +521,7 @@ public class Node {
 				schedule.schedule(scheduleParameters, new RetrieveFromRandom(element, this));
 			} else {
 				this.events.add(e);
-				this.deliver(e);
+				this.deliver(e, "sender");
 				//System.out.println(this.id + " # DELIVERS # " + e.getId() + " from sender");
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
@@ -542,14 +551,14 @@ public class Node {
 				event = router.requestEventToOriginator(eventId, this.id, eventCreator);
 				if (event != null) {
 					this.events.add(event);
-					this.deliver(event);
+					this.deliver(event, "originator");
 					this.eventIds.add(event.getId());
 					this.retrieveBuf.remove(element);
 					//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
 				}
 			} else {
 				this.events.add(event);
-				this.deliver(event);
+				this.deliver(event, "random");
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
 				//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
@@ -621,7 +630,7 @@ public class Node {
 		this.nodeState = NodeState.CRASHED;
 
 		this.events.clear();
-		this.eventIds.clear();
+		//this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -657,8 +666,13 @@ public class Node {
 		return null;
 	}
 	
-	public void deliver(Event e) {
+	public void deliver(Event e, String who) {
 		this.appNode.signalEventReception(e, this.id);
+		this.analyzedDelivered++;
+		
+		if(this.round > 300){
+			System.out.println(this.id + " d-> " + e.getId() + " " + who);
+		}
 	}
 
 	public NodeState getNodeState() {
@@ -708,5 +722,11 @@ public class Node {
 			}
 		}
 		return res;
+	}
+	
+	
+	public double getAnalyzedDeliveryRatio()
+	{
+		return this.analyzedDeliveryRatio;
 	}
 }

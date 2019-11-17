@@ -17,4 +17,12 @@ public class Unsubscription {
 		return age;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+	    if (obj == null) return false;
+	    if (obj == this) return true;
+	    if (!(obj instanceof Unsubscription)) return false;
+	    Unsubscription o = (Unsubscription) obj;
+	    return (o.getNodeId() == this.nodeId && o.getAge() == this.age);
+	}
 }
