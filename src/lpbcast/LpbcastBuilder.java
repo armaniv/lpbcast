@@ -37,7 +37,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int msg_per_round = params.getInteger("msg_per_round");
 		int churn_rate = params.getInteger("churn_rate");
 		int unsub_rate = params.getInteger("unsub_rate");
-		//int msg_loss_rate = params.getInteger("msg_loss_rate");
+		int msg_loss_rate = params.getInteger("msg_loss_rate");
 		boolean age_purging = params.getBoolean("age_purging");
 		boolean frequency_purging = params.getBoolean("frequency_purging");
 
@@ -52,7 +52,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		networkBuilder.buildNetwork();
 
 		// create the entity that manages the communication
-		Router router = new Router(0);
+		Router router = new Router(msg_loss_rate);
 
 		// create an agent that 'manages' the other agents (node)
 		AppNode appNode = new AppNode(node_count, n_messages, msg_per_round,churn_rate, unsub_rate);

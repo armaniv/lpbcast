@@ -138,10 +138,9 @@ public class AppNode {
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.get(eventId);
 			receivers.add(receiver);
-			
+
 			//System.out.println("msges reception: " + messages.toString());
 
-			
 			if (receivers.size() == this.node_count) {
 				this.messages.remove(eventId);
 				String[] parts = eventId.split("_");

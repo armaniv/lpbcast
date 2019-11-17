@@ -12,6 +12,12 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
+				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
+						defaultValue="0" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
 				<parameter name="round_k" displayName="K waiting rounds" type="int" 
 						defaultValue="7" 
 						isReadOnly="false" 
