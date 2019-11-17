@@ -19,12 +19,11 @@ public class Router {
 	// Send a gossip message to a destination node
 	public void sendGossip(Message gossip, Integer sourceNodeId, Integer destinationNodeId) {
 		double rnd = RandomHelper.nextDoubleFromTo(0, 1);
-		double prob = this.msg_loss_rate / (double)100;
-		
-		if(prob > 0 && rnd < prob ) {
-			//message is lost
-		}
-		else{
+		double prob = this.msg_loss_rate / (double) 100;
+
+		if (prob > 0 && rnd < prob) {
+			// message is lost
+		} else {
 			nodes.get(destinationNodeId).receive(gossip);
 		}
 	}

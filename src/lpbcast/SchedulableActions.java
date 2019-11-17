@@ -3,7 +3,7 @@ package lpbcast;
 import repast.simphony.engine.schedule.IAction;
 
 public class SchedulableActions {
-	
+
 	public static class ReceiveGossip implements IAction {
 		private Integer sourceNodeId;
 		private Integer destinationNodeId;

@@ -55,7 +55,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		Router router = new Router(msg_loss_rate);
 
 		// create an agent that 'manages' the other agents (node)
-		AppNode appNode = new AppNode(node_count, n_messages, msg_per_round,churn_rate, unsub_rate);
+		AppNode appNode = new AppNode(node_count, n_messages, msg_per_round, churn_rate, unsub_rate);
 		context.add(appNode);
 
 		HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
@@ -79,5 +79,4 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		router.setNodes(nodes);
 		return context;
 	}
-
 }

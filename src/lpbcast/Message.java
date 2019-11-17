@@ -6,7 +6,7 @@ public class Message {
 
 	private Integer sender;						// the Message sender
 	private ArrayList<Event> events; 			// the message's events list
-	private EventIds eventIds; 		// the message's digest events list
+	private EventIds eventIds; 					// the message's digest events list
 	private ArrayList<Membership> subs; 		// the message's subscriptions list
 	private ArrayList<Unsubscription> unSubs; 	// the message's un-subscriptions list
 

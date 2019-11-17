@@ -1,5 +1,5 @@
 <repast.simphony.chart2.engine.TimeSeriesChartDescriptor simphonyVersion="2.7.0">
-  <name>Time Series Chart</name>
+  <name>DeliveryRatioChart</name>
   <dataSet>DeliveryRatio</dataSet>
   <xAxisLabel>Tick Count</xAxisLabel>
   <yAxisLabel>Delivery Ratio</yAxisLabel>

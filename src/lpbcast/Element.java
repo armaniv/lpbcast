@@ -23,12 +23,12 @@ public class Element {
 	public Integer getGossipSender() {
 		return gossip_sender;
 	}
-	
+
 	public Integer getEventId() {
 		String[] parts = this.id.split("_");
 		return Integer.parseInt(parts[1]);
 	}
-	
+
 	public Integer getGeneratorNodeId() {
 		String[] parts = this.id.split("_");
 		return Integer.parseInt(parts[0]);
@@ -57,5 +57,5 @@ public class Element {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
-	} 
+	}
 }

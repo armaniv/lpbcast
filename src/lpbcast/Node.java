@@ -25,44 +25,44 @@ import repast.simphony.util.ContextUtils;
 public class Node {
 
 	// --- node's 'configuration' parameter
-		private Router router; 					// object that deals with localization and transfer of messages
-		private Grid<Object> grid; 				// the context's grid
-		private NodeState nodeState; 			// the node's state (enum)
-		private AppNode appNode;				// the node responsible of the simulation
-												// it manages, crashes, broadcast generation, etc
-		private int max_l; 						// the maximum view sizes
-		private int max_m; 						// the maximum buffers size
-		private int fanout; 					// the num of processes to which deliver a message (every T)
-		private int initial_neighbors; 			// size of initial connections (neighbors) of a node
-		private int round_k; 					// rounds to wait before asking to the sender for unseen events 
-		private int round_r; 					// rounds to wait before asking to a random node for unseen events 
-		private boolean age_purging;			// if true enables the event purging optimization
-		private boolean membership_purging;		// if true enables the membership purging optimization
-		private double membership_K;			// 0 < K <= 1 is the weight of the avg used in SELECT_PROCESS()
-		private int long_ago;					// parameter of event purging optimization and unsub
-		private Context<Object> context;		
-		private Network<Object> network;		
+	private Router router; 					// object that deals with localization and transfer of messages
+	private Grid<Object> grid; 				// the context's grid
+	private NodeState nodeState; 			// the node's state (enum)
+	private AppNode appNode;				// the node responsible of the simulation
+											// it manages, crashes, broadcast generation, etc
+	private int max_l; 						// the maximum view sizes
+	private int max_m; 						// the maximum buffers size
+	private int fanout; 					// the num of processes to which deliver a message (every T)
+	private int initial_neighbors; 			// size of initial connections (neighbors) of a node
+	private int round_k; 					// rounds to wait before asking to the sender for unseen events 
+	private int round_r; 					// rounds to wait before asking to a random node for unseen events 
+	private boolean age_purging;			// if true enables the event purging optimization
+	private boolean membership_purging;		// if true enables the membership purging optimization
+	private double membership_K;			// 0 < K <= 1 is the weight of the avg used in SELECT_PROCESS()
+	private int long_ago;					// parameter of event purging optimization and unsub
+	private Context<Object> context;		
+	private Network<Object> network;		
+	
+	// --- node's variables
+	private int id; 										// the node's identifier
+	private ArrayList<Membership> view; 					// the node's view
+	private ArrayList<Event> events; 						// the node's events list
+	private ArrayList<Event> myEvents; 						// all the events generates by this node (needed for retransmission)
+	private ArrayList<Pair<Event, Boolean>> myNewEvents;	// if hash value is false it means that these mine events have not been gossiped yet
+															// if the map is not empty, it means that it contains my events 
+															// which were not received by all other nodes
+	
+	private EventIds eventIds; 					// the node's identifier events list
+	private ArrayList<Membership> subs; 		// the node's subscriptions list
+	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
+	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
+	private int round; 							// the node's round
+	private int eventIdCounter; 				// count how many events a node created
 		
-		// --- node's variables
-		private int id; 							// the node's identifier
-		private ArrayList<Membership> view; 		// the node's view
-		private ArrayList<Event> events; 			// the node's events list
-		private ArrayList<Event> myEvents; 			// all the events generates by this node (needed for retransmission)
-		private ArrayList<Pair<Event, Boolean>> myNewEvents;	// if hash value is false it means that these mine events have not been gossiped yet
-																// if the map is not empty, it means that it contains my events 
-																// which were not received by all other nodes
-		
-		private EventIds eventIds; 		// the node's digest events list
-		private ArrayList<Membership> subs; 		// the node's subscriptions list
-		private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
-		private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
-		private int round; 							// the node's round
-		private int eventIdCounter; 				// count how many events a node created
-		
-		// --- node's variables for statistics
-		private int analyzedDelivered = 0;
-		private int analyzedSentEvents = 0;
-		private double analyzedDeliveryRatio = 0;
+	// --- node's variables for statistics
+	private int analyzedDelivered = 0;
+	private int analyzedSentEvents = 0;
+	private double analyzedDeliveryRatio = 0;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
@@ -84,9 +84,9 @@ public class Node {
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
 		this.myEvents = new ArrayList<>();
-		
+
 		this.myNewEvents = new ArrayList<>();
-		
+
 		this.eventIds = new EventIds();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
@@ -126,7 +126,7 @@ public class Node {
 			view.add(new Membership(neighbor, 0));
 			subs.add(new Membership(neighbor, 0));
 		}
-		
+
 	}
 
 	/**
@@ -136,29 +136,27 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1, priority = 2)
 	public void gossipEmission() {
-		
-		if(this.analyzedDelivered == 0 && this.analyzedSentEvents == 0){
+
+		if (this.analyzedDelivered == 0 && this.analyzedSentEvents == 0) {
 			this.analyzedDeliveryRatio = 0;
-		}
-		else if(this.analyzedSentEvents == 0){
+		} else if (this.analyzedSentEvents == 0) {
 			this.analyzedDeliveryRatio = this.analyzedDelivered;
-		}
-		else {
+		} else {
 			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
 		}
-		
+
 		round++;
 		this.analyzedDelivered = 0;
 		this.analyzedSentEvents = 0;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
-			
+
 			ArrayList<Event> events = new ArrayList<Event>();
 			for (Event e : this.events) {
 				e.incrementAge();
 				events.add(e);
 			}
-			
+
 			for (Pair<Event, Boolean> pair : this.myNewEvents) {
 				Event e = (Event) pair.getX();
 				boolean b = (Boolean) pair.getY();
@@ -169,8 +167,7 @@ public class Node {
 					pair.setY(true);
 				}
 			}
-			
-			
+
 			this.events = events;
 
 			// add self to sub
@@ -182,17 +179,16 @@ public class Node {
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
 			this.analyzedSentEvents = gossip.getEvents().size();
-			
+
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
-			
+
 			LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
-			int i=0;
-			int min = Math.min(fanout,  this.view.size());
-			while (i<min) {
-				int rnd = RandomHelper.nextIntFromTo(0,  this.view.size() -1);
+			int i = 0;
+			int min = Math.min(fanout, this.view.size());
+			while (i < min) {
+				int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 				Integer destinationId = this.view.get(rnd).getNodeId();
-				// System.out.println(this.id + " view " + this.view.toString());
 				if (!selected.contains(destinationId) && destinationId != this.id) {
 					selected.add(destinationId);
 					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
@@ -200,14 +196,14 @@ public class Node {
 					}
 					Node destination = this.router.locateNode(destinationId);
 					network.addEdge(this, destination);
-					
+
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-					ScheduleParameters scheduleParameters = ScheduleParameters
-							.createOneTime(schedule.getTickCount());
-					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
+					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount());
+					schedule.schedule(scheduleParameters,
+							new ReceiveGossip(this.id, destination.getId(), gossip, router));
 					i++;
 				}
-				
+
 			}
 
 			this.events.clear();
@@ -220,7 +216,6 @@ public class Node {
 	 */
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
-		//System.out.println(id + " generates " + event.getId());
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
 		this.myNewEvents.add(new Pair<Event, Boolean>(event, false));
@@ -237,7 +232,6 @@ public class Node {
 	 * @param gossip The gossip message received
 	 */
 	public void receive(Message gossip) {
-		//System.out.println(this.id + " < RECEIVES > from " + gossip.getSender() + " " + gossip.getEvents().toString());
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
 
 			// remove obsolete unsubs
@@ -306,7 +300,7 @@ public class Node {
 							this.view.add(gossipSub);
 						}
 					}
-					
+
 					// if the received membership is in the node's subscriptions
 					// increment its frequency in the subs buffer
 					m = findMembership(gossipSub, this.subs);
@@ -335,13 +329,13 @@ public class Node {
 					view.remove(target);
 					this.subs = view;
 				}
-				
+
 			} else {
 
 				// adapt view and subs sizes below the threshold
 				// by randomly removing elements from them
 				while (this.view.size() > this.max_l) {
-					
+
 					int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 					Membership node_removed = this.view.remove(rnd);
 
@@ -356,16 +350,13 @@ public class Node {
 				}
 			}
 
-			// ---- phase 3			
+			// ---- phase 3
 			ArrayList<Event> gossipEvents = gossip.getEvents();
-			for (int i=0; i<gossipEvents.size(); i++) {
+			for (int i = 0; i < gossipEvents.size(); i++) {
 				Event e = gossipEvents.get(i);
-				
+
 				if (!this.eventIds.contains(e.getCreatorId(), e.getEventId())) {
-					// System.out.println(this.id + " # DELIVERS # " + e.getId() + " through receive() from " + gossip.getSender());
 					this.events.add(e);
-					
-					
 					// deliver event to the application
 					this.deliver(e.getId(), "gossip");
 					this.eventIds.add(e.getCreatorId(), e.getEventId());
@@ -376,7 +367,7 @@ public class Node {
 			// we update the ages of the events based on the
 			// events we received through the gossip message
 			if (this.age_purging) {
-				
+
 				ArrayList<Event> toRemove = new ArrayList<Event>();
 				ArrayList<Event> toAdd = new ArrayList<Event>();
 				for (Event e1 : gossip.getEvents()) {
@@ -393,7 +384,7 @@ public class Node {
 
 				// and we remove the oldest events based on age
 				removeOldestNotifications();
-				
+
 			} else {
 
 				// otherwise we just remove events randomly until
@@ -407,46 +398,45 @@ public class Node {
 			// if there are events that other nodes have seen
 			// but this node did not, schedule a retrieve action
 			// where the sender of the message containing that id is contacted
-
 			for (Integer node : gossip.getEventIds().getMap().keySet()) {
 				ArrayList<Integer> gEventIds = gossip.getEventIds().getMap().get(node);
 				ArrayList<Integer> myEventIds = this.eventIds.getMap().get(node);
-				
+
 				for (Integer eventId : gEventIds) {
-					
+
 					if (!this.eventIds.contains(node, eventId)) {
 						boolean isGELastInSeq = (gEventIds.indexOf(eventId) == 0);
-						
+
 						if (myEventIds != null && isGELastInSeq) {
 							int myLastInSeq = myEventIds.get(0);
-							for (int eId=myLastInSeq+1; eId<=eventId; eId++) {
-								Element elem = new Element(node+"_"+eId, this.round, gossip.getSender());
+							for (int eId = myLastInSeq + 1; eId <= eventId; eId++) {
+								Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
 								if (!this.retrieveBuf.contains(elem) && !this.eventIds.contains(node, eId)) {
 									this.retrieveBuf.add(elem);
 									scheduleRetrieveFromSender(elem);
 								}
 							}
-						}else if (isGELastInSeq){
-							for (int eId=0; eId<=eventId; eId++) {
-								Element elem = new Element(node+"_"+eId, this.round, gossip.getSender());
+						} else if (isGELastInSeq) {
+							for (int eId = 0; eId <= eventId; eId++) {
+								Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
 								if (!this.retrieveBuf.contains(elem)) {
 									this.retrieveBuf.add(elem);
 									scheduleRetrieveFromSender(elem);
 								}
 							}
-						}else{
-							Element elem = new Element(node+"_"+eventId, this.round, gossip.getSender());
+						} else {
+							Element elem = new Element(node + "_" + eventId, this.round, gossip.getSender());
 							if (!this.retrieveBuf.contains(elem)) {
 								this.retrieveBuf.add(elem);
 								scheduleRetrieveFromSender(elem);
 							}
 						}
 					}
-				}	
+				}
 			}
 		}
 	}
-	
+
 	/**
 	 * Purges messages (only when Age Based Purging is ON) when either the event is
 	 * out of date or is the oldest
@@ -520,7 +510,7 @@ public class Node {
 				.createOneTime(schedule.getTickCount() + this.round_k);
 		schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
 	}
-	
+
 	/**
 	 * Requests the input element from the node who has forwarded it to this node
 	 * and if the node gives a negative answer it schedules a RetrieveFromRandom
@@ -544,7 +534,6 @@ public class Node {
 			} else {
 				this.events.add(e);
 				this.deliver(e.getId(), "sender");
-				//System.out.println(this.id + " # DELIVERS # " + e.getId() + " from sender");
 				this.eventIds.add(e.getCreatorId(), e.getEventId());
 				this.retrieveBuf.remove(element);
 			}
@@ -558,7 +547,7 @@ public class Node {
 	 * @param element - represents an Events but contains only the eventId and
 	 *                nodeId to connect with
 	 */
-	public void requestEventFromRandom(Element element) {
+	 public void requestEventFromRandom(Element element) {
 		// if still had not received the event
 		// ask the a random node for it
 		if (!this.eventIds.contains(element.getGeneratorNodeId(), element.getEventId())) {
@@ -576,14 +565,12 @@ public class Node {
 					this.deliver(event.getId(), "source");
 					this.eventIds.add(event.getCreatorId(), event.getEventId());
 					this.retrieveBuf.remove(element);
-					//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
 				}
 			} else {
 				this.events.add(event);
 				this.deliver(event.getId(), "rnd");
 				this.eventIds.add(event.getCreatorId(), event.getEventId());
 				this.retrieveBuf.remove(element);
-				//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
 			}
 		}
 	}
@@ -607,7 +594,7 @@ public class Node {
 		this.nodeState = NodeState.UNSUB;
 
 		this.events.clear();
-		//this.eventIds.clear();
+		// this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -615,32 +602,32 @@ public class Node {
 	}
 
 	/**
-	 * Emits a gossip message that contains only information about the unsubscription
-	 * of the node
+	 * Emits a gossip message that contains only information about the
+	 * unsubscription of the node
 	 */
 	public void unsubEmission() {
 		Unsubscription unsub = new Unsubscription(this.id, this.round);
 		this.unSubs.add(unsub);
 
 		Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-		
+
 		LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
-		int i=0;
-		while (i<Math.min(fanout,  this.view.size())) {
-			int rnd = RandomHelper.nextIntFromTo(0,  this.view.size() -1);
+		int i = 0;
+		while (i < Math.min(fanout, this.view.size())) {
+			int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 			if (!selected.contains(rnd)) {
 				Integer destinationId = this.view.get(rnd).getNodeId();
-				
+
 				for (RepastEdge<Object> edge : network.getOutEdges(this)) {
 					network.removeEdge(edge);
 				}
 				Node destination = this.router.locateNode(destinationId);
 				network.addEdge(this, destination);
-				
+
 				router.sendGossip(gossip, this.id, this.view.get(rnd).getNodeId());
 				i++;
 			}
-			
+
 		}
 	}
 
@@ -652,7 +639,7 @@ public class Node {
 		this.nodeState = NodeState.CRASHED;
 
 		this.events.clear();
-		//this.eventIds.clear();
+		// this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -687,7 +674,7 @@ public class Node {
 		}
 		return null;
 	}
-	
+
 	public void deliver(String eId, String from) {
 		this.appNode.signalEventReception(eId, this.id, this.round, from);
 		this.analyzedDelivered++;
@@ -700,63 +687,59 @@ public class Node {
 	public int getId() {
 		return this.id;
 	}
-	
+
 	public void setAppNode(AppNode appNode) {
 		this.appNode = appNode;
 	}
-	
+
 	public void deleteNew(String eventId) {
-		
+
 		int toRemove = -1;
-		for (int i = 0; i < this.myNewEvents.size(); i++)
-		{
+		for (int i = 0; i < this.myNewEvents.size(); i++) {
 			Pair<Event, Boolean> pair = this.myNewEvents.get(i);
 			Event ev = (Event) pair.getX();
 			if (eventId.contentEquals(ev.getId())) {
 				toRemove = i;
 			}
 		}
-		
-		if(toRemove!=-1)
-		{
+
+		if (toRemove != -1) {
 			this.myNewEvents.remove(toRemove);
 		}
 	}
-	
+
 	/**
-	 * Tells if the events generated by this node, 
-	 * were received by all the other nodes or not
+	 * Tells if the events generated by this node, were received by all the other
+	 * nodes or not
 	 */
 	public boolean hasNewEvents() {
 		return this.myNewEvents.size() > 0;
 	}
-	
+
 	public Membership findMembership(Membership m, ArrayList<Membership> list) {
 		Membership res = null;
-		for (int i=0; i<list.size(); i++) {
+		for (int i = 0; i < list.size(); i++) {
 			Membership n = list.get(i);
-			if (n.getNodeId().equals(m.getNodeId())){
+			if (n.getNodeId().equals(m.getNodeId())) {
 				res = n;
 				break;
 			}
 		}
 		return res;
 	}
-	
 
 	public int getCurrentRound() {
 		return this.round;
 	}
-	
-	//@ScheduledMethod(start = 500, interval = 1)
+
+	// @ScheduledMethod(start = 500, interval = 1)
 	public void debug() {
 		if (this.myNewEvents.size() > 0) {
 			System.out.println(this.id + " " + this.myNewEvents.size() + " " + this.myNewEvents.get(0).getX().getId());
 		}
 	}
-	
-	public double getAnalyzedDeliveryRatio()
-	{
+
+	public double getAnalyzedDeliveryRatio() {
 		return this.analyzedDeliveryRatio;
 	}
 }

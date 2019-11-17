@@ -12,34 +12,35 @@ public class Utilities {
 			}
 		}
 		return null;
-	
+
 	}
-	
-	public static class Pair<X, Y> { 
-		private X x; 
-		private Y y; 
-		
-		public Pair() {}
-		
-		public Pair(X x, Y y) { 
-			this.x = x; 
-		    this.y = y; 
+
+	public static class Pair<X, Y> {
+		private X x;
+		private Y y;
+
+		public Pair() {
 		}
-		
-		public X getX(){
+
+		public Pair(X x, Y y) {
+			this.x = x;
+			this.y = y;
+		}
+
+		public X getX() {
 			return this.x;
 		}
-		
-		public Y getY(){
+
+		public Y getY() {
 			return this.y;
 		}
-		
-		public void setX(X value){
+
+		public void setX(X value) {
 			this.x = value;
 		}
-		
-		public void setY(Y value){
+
+		public void setY(Y value) {
 			this.y = value;
 		}
-	} 
+	}
 }
