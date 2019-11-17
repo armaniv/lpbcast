@@ -27,9 +27,8 @@ public class AppNode {
 	private HashMap<String, HashSet<Integer>> messages;
 	
 	private ArrayList<AnalyzedMessage> analyzed_messages;
-	private int analyzed_n_messages = 1;
+	private int analyzed_n_messages = 100;
 	private int analyze_start_consider_messages_at_round = 100;
-	private int analyze_compute_statistics_at_round = 200;
 	
 	private HashMap<String, Integer> from_ratio;
 	
@@ -44,10 +43,12 @@ public class AppNode {
 		this.unsub_rate = unsub_rate;
 		this.msg_per_round = msg_per_round;
 		from_ratio = new HashMap<String, Integer>();
+		
 		from_ratio.put("gossip", 0);
 		from_ratio.put("rnd", 0);
 		from_ratio.put("source", 0);
 		from_ratio.put("sender", 0);
+		from_ratio.put("self", 0);
 	}
 
 	public void addNode(Node node) {
@@ -75,15 +76,16 @@ public class AppNode {
 				receivers.add(receiver.getId());
 				this.messages.put(eventId, receivers);	
 				n_messages--;
-				
 				int tick = (int)RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
+
+				// signalEventReception(eventId, receiver.getId(), tick, "self");
+				
 				if (tick >= this.analyze_start_consider_messages_at_round &&
 						this.analyzed_n_messages > 0) {
 					AnalyzedMessage message = new AnalyzedMessage(eventId, receiver.getCurrentRound());
 					this.analyzed_messages.add(message);
 					this.analyzed_n_messages--;
 				}
-				
 			}
 		}
 
@@ -131,9 +133,8 @@ public class AppNode {
 		}
 	}
 	
-	public void signalEventReception(Event event, int receiver, int nodeRound, String from) {
+	public void signalEventReception(String eventId, int receiver, int nodeRound, String from) {
 		// System.out.println(receiver + " DELIVERED " + event.getId());
-		String eventId = event.getId();
 		
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.get(eventId);
@@ -145,7 +146,7 @@ public class AppNode {
 				this.messages.remove(eventId);
 				String[] parts = eventId.split("_");
 				int eventGeneratorNodeId = Integer.parseInt(parts[0]);
-				this.nodes.get(eventGeneratorNodeId).deleteNew(event);
+				this.nodes.get(eventGeneratorNodeId).deleteNew(eventId);
 				
 			}else {
 				this.messages.put(eventId, receivers);
@@ -161,10 +162,9 @@ public class AppNode {
 			int passedRounds = nodeRound - creationRound;
 			m.addReceiverAtRound(receiver, passedRounds);
 		}
-		
 	}
 	
-	@ScheduledMethod(start = 250, interval = 0)
+	@ScheduledMethod(start = 400, interval = 0)
 	public void computeExpectedInfectedProcesses() {
 		HashMap<Integer, ArrayList<Integer>> receiversPerRound = new HashMap<Integer, ArrayList<Integer>>();
 
@@ -198,7 +198,40 @@ public class AppNode {
 		System.out.println();
 		System.out.println("Deliver Type Ratio:");
 		System.out.println(this.from_ratio.toString());
-		
+	}
+	
+	// @ScheduledMethod(start = 1, interval = 0)
+	public void EventIdsTEST() {
+		EventIds eIds = new EventIds();
+		eIds.add(1, 0);
+		eIds.log();
+		eIds.add(1, 5);
+		eIds.log();
+		eIds.add(1, 4);
+		eIds.log();
+		eIds.add(1, 3);
+		eIds.log();
+		eIds.add(1, 1);
+		eIds.log();
+		eIds.add(0, 3);
+		eIds.log();
+		eIds.add(0, 5);
+		eIds.log();
+		eIds.add(0, 4);
+		eIds.log();
+		eIds.add(0, 9);
+		eIds.log();
+		eIds.add(0, 8);
+		eIds.log();
+		eIds.add(0, 7);
+		eIds.log();
+		eIds.add(0, 6);
+		eIds.log();
+		System.out.println(eIds.contains(0, 8));
+		System.out.println(eIds.contains(0, 9));
+		System.out.println(eIds.contains(1, 8));
+		System.out.println(eIds.contains(1, 2));
+		System.out.println(eIds.contains(1, 3));
 	}
 	
 }
