@@ -3,7 +3,6 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -590,7 +589,7 @@ public class Node {
 		this.nodeState = NodeState.UNSUB;
 
 		this.events.clear();
-		this.eventIds.clear();
+		//this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -674,6 +673,7 @@ public class Node {
 
 	public void deliver(Event e, String from) {
 		this.appNode.signalEventReception(e, this.id, this.round, from);
+		this.analyzedDelivered++;
 	}
 
 	public NodeState getNodeState() {
@@ -728,5 +728,10 @@ public class Node {
 
 	public int getCurrentRound() {
 		return this.round;
+	}
+	
+	public double getAnalyzedDeliveryRatio()
+	{
+		return this.analyzedDeliveryRatio;
 	}
 }
