@@ -38,9 +38,7 @@ public class Element {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((gossip_sender == null) ? 0 : gossip_sender.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + round;
 		return result;
 	}
 
@@ -53,17 +51,10 @@ public class Element {
 		if (getClass() != obj.getClass())
 			return false;
 		Element other = (Element) obj;
-		if (gossip_sender == null) {
-			if (other.gossip_sender != null)
-				return false;
-		} else if (!gossip_sender.equals(other.gossip_sender))
-			return false;
 		if (id == null) {
 			if (other.id != null)
 				return false;
 		} else if (!id.equals(other.id))
-			return false;
-		if (round != other.round)
 			return false;
 		return true;
 	}

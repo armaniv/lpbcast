@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <parameters>
 					<parameter name="fanout" displayName="Fanout" type="int" 
-						defaultValue="2" 
+						defaultValue="3" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="grid_size" displayName="Grid size" type="int" 
-						defaultValue="14" 
+						defaultValue="20" 
+						isReadOnly="false" 
+						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
+									
+		/>
+				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
+						defaultValue="0" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -38,7 +44,7 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="1" 
+						defaultValue="1000" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -57,7 +63,7 @@
 						
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
-						defaultValue="5" 
+						defaultValue="125" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -75,7 +81,7 @@
 									
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
-						defaultValue="2" 
+						defaultValue="30" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -87,7 +93,7 @@
 									
 		/>
 				<parameter name="max_m" displayName="Max buffers size" type="int" 
-						defaultValue="2" 
+						defaultValue="30" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
