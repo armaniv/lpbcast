@@ -403,7 +403,7 @@ public class Node {
 			}
 
 			// if there are events that other nodes have seen
-			// but this node did not, schedule a retrieve actionBoolean
+			// but this node did not, schedule a retrieve action
 			// where the sender of the message containing that id is contacted
 
 			for (Integer node : gossip.getEventIds().getMap().keySet()) {
