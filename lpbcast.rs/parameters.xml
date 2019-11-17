@@ -13,19 +13,19 @@
 									
 		/>
 				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
-						defaultValue="0" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="round_k" displayName="K waiting rounds" type="int" 
-						defaultValue="7" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="msg_per_round" displayName="Msg per Round" type="int" 
-						defaultValue="1" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -37,39 +37,39 @@
 									
 		/>
 				<parameter name="age_purging" displayName="Age purging opt" type="boolean" 
-						defaultValue="false" 
+						defaultValue="true" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="100" 
+						defaultValue="800" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="round_r" displayName="R waiting rounds" type="int" 
-						defaultValue="7" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="frequency_purging" displayName="Freq purging opt" type="boolean" 
-						defaultValue="false" 
+						defaultValue="true" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
 						
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
-						defaultValue="125" 
+						defaultValue="60" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="churn_rate" displayName="Percent churn rate" type="int" 
-						defaultValue="0" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -87,7 +87,7 @@
 									
 		/>
 				<parameter name="initial_neighbors" displayName="Initial neighbors" type="int" 
-						defaultValue="2" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

@@ -59,7 +59,7 @@ public class AppNode {
 	 * Periodic function which tells to a random node to generate an event. For
 	 * visualization purpose manage also the node's variable newEventThisRound
 	 */
-	@ScheduledMethod(start = 2, interval = 1, priority = 1)
+	@ScheduledMethod(start = 2, interval = 1, priority = 3)
 	public void generateBroadcast() {
 		// generate a new message
 		if (n_messages > 0) {

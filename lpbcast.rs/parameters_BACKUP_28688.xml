@@ -13,7 +13,6 @@
 									
 		/>
 				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
-
 						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
@@ -83,6 +82,7 @@
 		/>
 				<parameter name="max_l" displayName="Max view size" type="int" 
 						defaultValue="20" 
+						defaultValue="30" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

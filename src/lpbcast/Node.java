@@ -3,7 +3,6 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -60,7 +59,10 @@ public class Node {
 		private int round; 							// the node's round
 		private int eventIdCounter; 				// count how many events a node created
 		
-		private int a=0;
+		// --- node's variables for statistics
+		private int analyzedDelivered = 0;
+		private int analyzedSentEvents = 0;
+		private double analyzedDeliveryRatio = 0;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
@@ -134,7 +136,20 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 1, priority = 2)
 	public void gossipEmission() {
+		
+		if(this.analyzedDelivered == 0 && this.analyzedSentEvents == 0){
+			this.analyzedDeliveryRatio = 0;
+		}
+		if(this.analyzedSentEvents == 0){
+			this.analyzedDeliveryRatio = this.analyzedDelivered;
+		}
+		else {
+			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
+		}
+		
 		round++;
+		this.analyzedDelivered = 0;
+		this.analyzedSentEvents = 0;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 			
@@ -143,16 +158,6 @@ public class Node {
 				e.incrementAge();
 				events.add(e);
 			}
-			
-			// gossip my new events
-			/*for (Event e : this.myNewEvents.keySet()) {
-				if (!this.myNewEvents.get(e)) {
-					events.add(e);
-					this.eventIds.add(e.getId());
-					// set new event as Gossiped
-					this.myNewEvents.put(e, true);
-				}
-			}*/
 			
 			for (Pair pair : this.myNewEvents) {
 				Event e = (Event) pair.getX();
@@ -176,7 +181,8 @@ public class Node {
 
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-
+			this.analyzedSentEvents = gossip.getEvents().size();
+			
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
 			
@@ -197,12 +203,10 @@ public class Node {
 					
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 					ScheduleParameters scheduleParameters = ScheduleParameters
-							.createOneTime(schedule.getTickCount() + 1);
+							.createOneTime(schedule.getTickCount());
 					schedule.schedule(scheduleParameters, new ReceiveGossip(this.id, destination.getId(), gossip, router));
-					if (!gossip.getEvents().isEmpty()) {
-						//System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
-					}
-//					this.router.sendGossip(gossip, this.id, destination.getId());
+					//System.out.println(this.id + " * GOSSIPS * to " + destination.getId() + " " + gossip.getEvents().toString());
+					//this.router.sendGossip(gossip, this.id, destination.getId());
 					i++;
 				}
 				
@@ -612,7 +616,7 @@ public class Node {
 		this.nodeState = NodeState.UNSUB;
 
 		this.events.clear();
-		this.eventIds.clear();
+		//this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -657,7 +661,7 @@ public class Node {
 		this.nodeState = NodeState.CRASHED;
 
 		this.events.clear();
-		this.eventIds.clear();
+		//this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -693,8 +697,9 @@ public class Node {
 		return null;
 	}
 	
-	public void deliver(String eventId, String from) {
-		this.appNode.signalEventReception(eventId, this.id, this.round, from);
+	public void deliver(String eId, String from) {
+		this.appNode.signalEventReception(eId, this.id, this.round, from);
+		this.analyzedDelivered++;
 	}
 
 	public NodeState getNodeState() {
@@ -710,12 +715,6 @@ public class Node {
 	}
 	
 	public void deleteNew(String eventId) {
-		
-		String[] parts = eventId.split("_");
-		int eid = Integer.parseInt(parts[1]);
-		if (eid==0) {
-			this.a++;
-		}
 		
 		int toRemove = -1;
 		for (int i = 0; i < this.myNewEvents.size(); i++)
@@ -753,6 +752,7 @@ public class Node {
 		return res;
 	}
 	
+
 	public int getCurrentRound() {
 		return this.round;
 	}
@@ -760,7 +760,12 @@ public class Node {
 	@ScheduledMethod(start = 500, interval = 1)
 	public void debug() {
 		if (this.myNewEvents.size() > 0) {
-			System.out.println(this.id + " " + this.myNewEvents.size() + " " + this.myNewEvents.get(0).getX().getId() + " " + this.a);
+			System.out.println(this.id + " " + this.myNewEvents.size() + " " + this.myNewEvents.get(0).getX().getId());
 		}
+	}
+	
+	public double getAnalyzedDeliveryRatio()
+	{
+		return this.analyzedDeliveryRatio;
 	}
 }

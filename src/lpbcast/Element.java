@@ -57,8 +57,5 @@ public class Element {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
-	}
-	
-
-
+	} 
 }
