@@ -757,7 +757,7 @@ public class Node {
 		return this.round;
 	}
 	
-	@ScheduledMethod(start = 500, interval = 1)
+	//@ScheduledMethod(start = 500, interval = 1)
 	public void debug() {
 		if (this.myNewEvents.size() > 0) {
 			System.out.println(this.id + " " + this.myNewEvents.size() + " " + this.myNewEvents.get(0).getX().getId());
