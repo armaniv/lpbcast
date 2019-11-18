@@ -137,18 +137,7 @@ public class Node {
 	@SuppressWarnings("unchecked")
 	@ScheduledMethod(start = 2, interval = 2, priority = 2)
 	public void gossipEmission() {
-
-		if (this.analyzedDelivered == 0 && this.analyzedSentEvents == 0) {
-			this.analyzedDeliveryRatio = 0;
-		} else if (this.analyzedSentEvents == 0) {
-			this.analyzedDeliveryRatio = 1;
-		} else {
-			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
-		}
-
 		round++;
-		this.analyzedDelivered = 0;
-		this.analyzedSentEvents = 0;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 
@@ -178,7 +167,7 @@ public class Node {
 
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-			this.analyzedSentEvents = gossip.getEvents().size();
+			analyzedComputeDeliveryRatio(gossip.getEvents().size());
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
@@ -492,11 +481,11 @@ public class Node {
 	public Membership selectProcess(ArrayList<Membership> list) {
 		boolean found = false;
 		Membership target = null;
-		int avg = 0;
+		double avg = 0;
 		for (Membership m : list) {
 			avg = avg + m.getFrequency();
 		}
-		avg = avg / list.size();
+		avg = avg / (double)list.size();
 		while (!found) {
 			int rnd = RandomHelper.nextIntFromTo(0, list.size() - 1);
 			target = list.get(rnd);
@@ -601,7 +590,6 @@ public class Node {
 		this.nodeState = NodeState.UNSUB;
 
 		this.events.clear();
-		// this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -646,7 +634,6 @@ public class Node {
 		this.nodeState = NodeState.CRASHED;
 
 		this.events.clear();
-		// this.eventIds.clear();
 		this.subs.clear();
 		this.unSubs.clear();
 		this.retrieveBuf.clear();
@@ -737,6 +724,24 @@ public class Node {
 
 	public int getCurrentRound() {
 		return this.round;
+	}
+
+	
+	public void analyzedComputeDeliveryRatio(int sentSize) {
+		this.analyzedSentEvents = sentSize;
+
+		if (this.analyzedDelivered == 0 && this.analyzedSentEvents == 0) {
+			this.analyzedDeliveryRatio = 0;
+		} else if (this.analyzedSentEvents == 0) {
+			this.analyzedDeliveryRatio = 1;
+		} else {
+			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
+		}
+		
+		//reset counter
+		this.analyzedDelivered = 0;
+		
+		//System.out.println(this.analyzedDeliveryRatio + "= " + this.analyzedDelivered +"/"+ this.analyzedSentEvents);
 	}
 
 	public double getAnalyzedDeliveryRatio() {
