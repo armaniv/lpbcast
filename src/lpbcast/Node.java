@@ -62,11 +62,10 @@ public class Node {
 		
 	// --- node's variables for statistics
 	private int analyzedDelivered = 0;
-	private int analyzedSentEvents = 0;
-	private double analyzedDeliveryRatio = 0;
+	private int analyzedMsg_per_round;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r, boolean age_purging, boolean membership_purging, int nodes_count) {
+			int round_k, int round_r, boolean age_purging, boolean membership_purging, int nodes_count, int msg_per_round) {
 		this.router = router;
 		this.grid = grid;
 		this.nodeState = NodeState.SUB;
@@ -80,6 +79,7 @@ public class Node {
 		this.membership_purging = membership_purging;
 		this.membership_K = 1;
 		this.long_ago = 7;
+		this.analyzedMsg_per_round = msg_per_round;
 
 		this.id = id;
 		this.view = new ArrayList<>();
@@ -138,6 +138,7 @@ public class Node {
 	@ScheduledMethod(start = 2, interval = 2, priority = 2)
 	public void gossipEmission() {
 		round++;
+		this.analyzedDelivered = 0;
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 
@@ -167,7 +168,7 @@ public class Node {
 
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-			analyzedComputeDeliveryRatio(gossip.getEvents().size());
+			//analyzedComputeDeliveryRatio(gossip.getEvents().size());
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
@@ -670,7 +671,9 @@ public class Node {
 
 	public void deliver(String eId, String from) {
 		this.appNode.signalEventReception(eId, this.id, this.round, from);
-		this.analyzedDelivered++;
+		if(from == "self" || from == "gossip") {
+			this.analyzedDelivered++;
+		}
 	}
 
 	public NodeState getNodeState() {
@@ -725,24 +728,10 @@ public class Node {
 		return this.round;
 	}
 
-	
-	public void analyzedComputeDeliveryRatio(int sentSize) {
-		this.analyzedSentEvents = sentSize;
-
-		if (this.analyzedDelivered == 0 && this.analyzedSentEvents == 0) {
-			this.analyzedDeliveryRatio = 0;
-		} else if (this.analyzedSentEvents == 0) {
-			this.analyzedDeliveryRatio = 1;
-		} else {
-			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
-		}
-		
-		//reset delivered counter
-		this.analyzedDelivered = 0;
-	}
-
 	public double getAnalyzedDeliveryRatio() {
-		return this.analyzedDeliveryRatio;
+		double analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedMsg_per_round;
+		
+		return analyzedDeliveryRatio;
 	}
 	
 	public boolean isInRetrieveBuf(Element e) {

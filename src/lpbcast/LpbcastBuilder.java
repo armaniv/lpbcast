@@ -40,6 +40,8 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		int msg_loss_rate = params.getInteger("msg_loss_rate");
 		boolean age_purging = params.getBoolean("age_purging");
 		boolean frequency_purging = params.getBoolean("frequency_purging");
+		
+		System.out.print("age:" + age_purging + " freq:" + frequency_purging);
 
 		// create a grid
 		GridFactory gridFactory = GridFactoryFinder.createGridFactory(null);
@@ -63,7 +65,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		// populate the context with the desired number of nodes
 		for (int i = 0; i < node_count; i++) {
 			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r,
-					age_purging, frequency_purging, node_count);
+					age_purging, frequency_purging, node_count, msg_per_round);
 			nodes.put(i, node);
 			context.add(node);
 			appNode.addNode(node);
