@@ -19,7 +19,7 @@
 									
 		/>
 				<parameter name="round_k" displayName="K waiting rounds" type="int" 
-						defaultValue="5" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -50,7 +50,7 @@
 									
 		/>
 				<parameter name="round_r" displayName="R waiting rounds" type="int" 
-						defaultValue="5" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

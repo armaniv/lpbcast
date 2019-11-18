@@ -163,7 +163,7 @@ public class AppNode {
 		}
 	}
 
-	@ScheduledMethod(start = 400, interval = 0)
+	//@ScheduledMethod(start = 400, interval = 0)
 	public void computeExpectedInfectedProcesses() {
 		HashMap<Integer, ArrayList<Integer>> receiversPerRound = new HashMap<Integer, ArrayList<Integer>>();
 
