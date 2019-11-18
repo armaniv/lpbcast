@@ -63,7 +63,7 @@ public class LpbcastBuilder implements ContextBuilder<Object> {
 		// populate the context with the desired number of nodes
 		for (int i = 0; i < node_count; i++) {
 			Node node = new Node(i, grid, router, max_l, max_m, fanout, initial_neighbors, round_k, round_r,
-					age_purging, frequency_purging);
+					age_purging, frequency_purging, node_count);
 			nodes.put(i, node);
 			context.add(node);
 			appNode.addNode(node);

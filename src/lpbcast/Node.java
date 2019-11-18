@@ -11,6 +11,7 @@ import lpbcast.Utilities.Pair;
 import repast.simphony.context.Context;
 import repast.simphony.engine.environment.RunEnvironment;
 import repast.simphony.engine.schedule.ISchedule;
+import repast.simphony.engine.schedule.PriorityType;
 import repast.simphony.engine.schedule.ScheduleParameters;
 import repast.simphony.engine.schedule.ScheduledMethod;
 import repast.simphony.query.space.grid.GridCell;
@@ -65,7 +66,7 @@ public class Node {
 	private double analyzedDeliveryRatio = 0;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
-			int round_k, int round_r, boolean age_purging, boolean membership_purging) {
+			int round_k, int round_r, boolean age_purging, boolean membership_purging, int nodes_count) {
 		this.router = router;
 		this.grid = grid;
 		this.nodeState = NodeState.SUB;
@@ -87,7 +88,7 @@ public class Node {
 
 		this.myNewEvents = new ArrayList<>();
 
-		this.eventIds = new EventIds();
+		this.eventIds = new EventIds(nodes_count);
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();
@@ -134,13 +135,13 @@ public class Node {
 	 * state of the algorithm
 	 */
 	@SuppressWarnings("unchecked")
-	@ScheduledMethod(start = 2, interval = 1, priority = 2)
+	@ScheduledMethod(start = 2, interval = 2, priority = 2)
 	public void gossipEmission() {
 
 		if (this.analyzedDelivered == 0 && this.analyzedSentEvents == 0) {
 			this.analyzedDeliveryRatio = 0;
 		} else if (this.analyzedSentEvents == 0) {
-			this.analyzedDeliveryRatio = this.analyzedDelivered;
+			this.analyzedDeliveryRatio = 1;
 		} else {
 			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
 		}
@@ -151,10 +152,9 @@ public class Node {
 
 		if (this.nodeState != NodeState.CRASHED || this.nodeState != NodeState.UNSUB) {
 
-			ArrayList<Event> events = new ArrayList<Event>();
-			for (Event e : this.events) {
+			ArrayList<Event> events = new ArrayList<Event>(this.events);
+			for (Event e : events) {
 				e.incrementAge();
-				events.add(e);
 			}
 
 			for (Pair<Event, Boolean> pair : this.myNewEvents) {
@@ -198,7 +198,7 @@ public class Node {
 					network.addEdge(this, destination);
 
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount());
+					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 1, PriorityType.RANDOM);
 					schedule.schedule(scheduleParameters,
 							new ReceiveGossip(this.id, destination.getId(), gossip, router));
 					i++;
@@ -219,6 +219,9 @@ public class Node {
 		this.myEvents.add(event);
 		// tell to itself that this event is new and was not gossiped yet
 		this.myNewEvents.add(new Pair<Event, Boolean>(event, false));
+		
+		deliver(event.getId(), "self");
+		
 		eventIdCounter++;
 		if (this.age_purging) {
 			removeOldestNotifications();
@@ -400,36 +403,40 @@ public class Node {
 			// where the sender of the message containing that id is contacted
 			for (Integer node : gossip.getEventIds().getMap().keySet()) {
 				ArrayList<Integer> gEventIds = gossip.getEventIds().getMap().get(node);
-				ArrayList<Integer> myEventIds = this.eventIds.getMap().get(node);
 
 				for (Integer eventId : gEventIds) {
-
-					if (!this.eventIds.contains(node, eventId)) {
-						boolean isGELastInSeq = (gEventIds.indexOf(eventId) == 0);
-
-						if (myEventIds != null && isGELastInSeq) {
-							int myLastInSeq = myEventIds.get(0);
-							for (int eId = myLastInSeq + 1; eId <= eventId; eId++) {
-								Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
-								if (!this.retrieveBuf.contains(elem) && !this.eventIds.contains(node, eId)) {
-									this.retrieveBuf.add(elem);
-									scheduleRetrieveFromSender(elem);
-								}
-							}
-						} else if (isGELastInSeq) {
-							for (int eId = 0; eId <= eventId; eId++) {
-								Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
-								if (!this.retrieveBuf.contains(elem)) {
-									this.retrieveBuf.add(elem);
-									scheduleRetrieveFromSender(elem);
-								}
-							}
-						} else {
-							Element elem = new Element(node + "_" + eventId, this.round, gossip.getSender());
-							if (!this.retrieveBuf.contains(elem)) {
+					boolean isGELastInSeq = (gEventIds.indexOf(eventId) == 0);
+					int isContainedOutcome = this.eventIds.contains(node, eventId, true);
+					
+					if (isContainedOutcome == -1 && isGELastInSeq) {
+						
+						for (int eId = 0; eId <= eventId; eId++) {
+							Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
+							
+							if (!isInRetrieveBuf(elem)) {
 								this.retrieveBuf.add(elem);
 								scheduleRetrieveFromSender(elem);
 							}
+						}
+						
+					}else if (isContainedOutcome == 0  && isGELastInSeq) {
+						int myLastInSeq = this.eventIds.getMap().get(node).get(0);
+						
+						for (int eId = myLastInSeq + 1; eId <= eventId; eId++) {
+							Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
+							
+							if (!isInRetrieveBuf(elem) && !this.eventIds.contains(node, eId)) {
+								this.retrieveBuf.add(elem);
+								scheduleRetrieveFromSender(elem);
+							}
+						}
+						
+					}else if (isContainedOutcome != 1 && !isGELastInSeq) {
+						Element elem = new Element(node + "_" + eventId, this.round, gossip.getSender());
+						
+						if (!isInRetrieveBuf(elem)) {
+							this.retrieveBuf.add(elem);
+							scheduleRetrieveFromSender(elem);
 						}
 					}
 				}
@@ -732,14 +739,27 @@ public class Node {
 		return this.round;
 	}
 
-	// @ScheduledMethod(start = 500, interval = 1)
-	public void debug() {
-		if (this.myNewEvents.size() > 0) {
-			System.out.println(this.id + " " + this.myNewEvents.size() + " " + this.myNewEvents.get(0).getX().getId());
-		}
-	}
-
 	public double getAnalyzedDeliveryRatio() {
 		return this.analyzedDeliveryRatio;
+	}
+	
+	public boolean isInRetrieveBuf(Element e) {
+		for (Element el : this.retrieveBuf) {
+			if (el.getId().equals(e.getId())){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	//@ScheduledMethod(start = 400, interval = 1)
+	public void f() {
+		if (this.hasNewEvents()) {
+			System.out.println(this.id + " " + this.myNewEvents.size());
+			for (Pair<Event,Boolean> p : this.myNewEvents) {
+				System.out.println("\t" + p.getX().toString());
+				System.out.println("\t" + this.appNode.receivedBy(p.getX().toString()));
+			}
+		}
 	}
 }

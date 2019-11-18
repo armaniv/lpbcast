@@ -70,4 +70,18 @@ public class SchedulableActions {
 			node.subscribe();
 		}
 	}
+	
+	public static class DeliverToSelf implements IAction {
+		private Node node;
+		private String eId;
+
+		public DeliverToSelf(Node node, String eId) {
+			this.node = node;
+			this.eId = eId;
+		}
+
+		public void execute() {
+			this.node.deliver(eId, "self");
+		}
+	}
 }

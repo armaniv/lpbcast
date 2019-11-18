@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <parameters>
 					<parameter name="fanout" displayName="Fanout" type="int" 
-						defaultValue="4" 
+						defaultValue="3" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -13,7 +13,7 @@
 									
 		/>
 				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
-						defaultValue="10" 
+						defaultValue="0" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -25,7 +25,7 @@
 									
 		/>
 				<parameter name="msg_per_round" displayName="Msg per Round" type="int" 
-						defaultValue="30" 
+						defaultValue="1" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -44,7 +44,7 @@
 						
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="24000" 
+						defaultValue="200" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -69,7 +69,7 @@
 									
 		/>
 				<parameter name="churn_rate" displayName="Percent churn rate" type="int" 
-						defaultValue="5" 
+						defaultValue="0" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									

@@ -27,7 +27,7 @@ public class AppNode {
 	private HashMap<String, HashSet<Integer>> messages;
 
 	private ArrayList<AnalyzedMessage> analyzed_messages;
-	private int analyzed_n_messages = 100;
+	private int analyzed_n_messages = 300;
 	private int analyze_start_consider_messages_at_round = 100;
 
 	private HashMap<String, Integer> from_ratio;
@@ -59,7 +59,7 @@ public class AppNode {
 	 * Periodic function which tells to a random node to generate an event. For
 	 * visualization purpose manage also the node's variable newEventThisRound
 	 */
-	@ScheduledMethod(start = 2, interval = 1, priority = 3)
+	@ScheduledMethod(start = 3, interval = 2, priority = 3)
 	public void generateBroadcast() {
 		// generate a new message
 		if (n_messages > 0) {
@@ -73,12 +73,10 @@ public class AppNode {
 				Node receiver = this.nodes.get(rnd);
 				String eventId = receiver.broadcast();
 				HashSet<Integer> receivers = new HashSet<Integer>();
-				receivers.add(receiver.getId());
 				this.messages.put(eventId, receivers);
+				receiver.deliver(eventId, "self");
 				n_messages--;
 				int tick = (int) RunEnvironment.getInstance().getCurrentSchedule().getTickCount();
-
-				// signalEventReception(eventId, receiver.getId(), tick, "self");
 
 				if (tick >= this.analyze_start_consider_messages_at_round && this.analyzed_n_messages > 0) {
 					AnalyzedMessage message = new AnalyzedMessage(eventId, receiver.getCurrentRound());
@@ -158,7 +156,7 @@ public class AppNode {
 		AnalyzedMessage m = AnalyzedMessage.find(analyzed_messages, eventId);
 		if (m != null) {
 			int creationRound = m.creationRound;
-			int passedRounds = nodeRound - creationRound;
+			int passedRounds = Math.abs(nodeRound - creationRound);
 			m.addReceiverAtRound(receiver, passedRounds);
 		}
 	}
@@ -187,11 +185,12 @@ public class AppNode {
 		System.out.println("Expected #InfectedProcesses per Round:");
 		double prev_avg = 0;
 		for (Integer round : receiversPerRound.keySet()) {
-			int sum = receiversPerRound.get(round).get(0);
-			int counters = receiversPerRound.get(round).get(1);
-			double avg = (double) (sum / counters) + prev_avg;
-			prev_avg = avg;
-			System.out.println("round: " + round + " avg: " + avg);
+			if (prev_avg >= this.node_count) break;
+			double sum = receiversPerRound.get(round).get(0);
+			double counters = receiversPerRound.get(round).get(1);
+			double avg = (double)(sum / counters);
+			prev_avg = prev_avg + Double.valueOf(avg);
+			System.out.println("round: " + round + " avg: " + prev_avg);
 		}
 
 		System.out.println();
@@ -201,7 +200,7 @@ public class AppNode {
 
 	// @ScheduledMethod(start = 1, interval = 0)
 	public void EventIdsTEST() {
-		EventIds eIds = new EventIds();
+		EventIds eIds = new EventIds(this.node_count);
 		eIds.add(1, 0);
 		eIds.log();
 		eIds.add(1, 5);
@@ -231,5 +230,9 @@ public class AppNode {
 		System.out.println(eIds.contains(1, 8));
 		System.out.println(eIds.contains(1, 2));
 		System.out.println(eIds.contains(1, 3));
+	}
+	
+	public String receivedBy(String eId) {
+		return this.messages.get(eId).toString();
 	}
 }

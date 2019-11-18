@@ -6,8 +6,13 @@ import java.util.HashMap;
 public class EventIds {
 	private HashMap<Integer, ArrayList<Integer>> eventIds;
 
-	public EventIds() {
+	public EventIds(int nodesCount) {
 		this.eventIds = new HashMap<Integer, ArrayList<Integer>>();
+		for (int i=0; i<nodesCount; i++) {
+			ArrayList<Integer> events = new ArrayList<Integer>();
+			events.add(-1);
+			this.eventIds.put(i, events);
+		}
 	}
 
 	public EventIds(HashMap<Integer, ArrayList<Integer>> eventIds) {
@@ -38,6 +43,31 @@ public class EventIds {
 			}
 		}
 		return false;
+	}
+	
+	public int contains(Integer nodeId, Integer eventId, boolean isNull) {
+		ArrayList<Integer> events = this.eventIds.get(nodeId);
+		if (events == null) {
+			return -1;
+		}
+		Integer lastInSeq = events.get(0);
+		if (eventId <= lastInSeq) {
+			return 1;
+		} else if (events.size() == 1) {
+			return 0;
+		}
+		Integer size = events.size();
+		Integer biggestId = events.get(size - 1);
+		if (eventId > biggestId) {
+			return 0;
+		}
+		for (int i = size - 1; i >= 1; i--) {
+			Integer outOfSeq = events.get(i);
+			if (eventId.equals(outOfSeq)) {
+				return 1;
+			}
+		}
+		return 0;
 	}
 
 	public void add(Integer nodeId, Integer eventId) {
