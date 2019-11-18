@@ -5,8 +5,8 @@ import java.util.HashMap;
 import repast.simphony.random.RandomHelper;
 
 public class Router {
-	private HashMap<Integer, Node> nodes; // the nodes list
-	private int msg_loss_rate;
+	private HashMap<Integer, Node> nodes; 	// the nodes list
+	private int msg_loss_rate;				// the loss rate
 
 	public Router(int msg_loss_rate) {
 		this.msg_loss_rate = msg_loss_rate;

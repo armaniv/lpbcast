@@ -26,10 +26,10 @@ public class AppNode {
 	// of the ids of the nodes that have received that message
 	private HashMap<String, HashSet<Integer>> messages;
 
+	// --- variables for statistics
 	private ArrayList<AnalyzedMessage> analyzed_messages;
 	private int analyzed_n_messages = 300;
 	private int analyze_start_consider_messages_at_round = 100;
-
 	private HashMap<String, Integer> from_ratio;
 
 	public AppNode(int node_count, int n_messages, int msg_per_round, int churn_rate, int unsub_rate) {
@@ -131,13 +131,9 @@ public class AppNode {
 	}
 
 	public void signalEventReception(String eventId, int receiver, int nodeRound, String from) {
-		// System.out.println(receiver + " DELIVERED " + event.getId());
-
 		if (this.messages.containsKey(eventId)) {
 			HashSet<Integer> receivers = this.messages.get(eventId);
 			receivers.add(receiver);
-
-			// System.out.println("msges reception: " + messages.toString());
 
 			if (receivers.size() == this.node_count) {
 				this.messages.remove(eventId);
@@ -161,7 +157,7 @@ public class AppNode {
 		}
 	}
 
-	//@ScheduledMethod(start = 400, interval = 0)
+	@ScheduledMethod(start = 400, interval = 0)
 	public void computeExpectedInfectedProcesses() {
 		HashMap<Integer, ArrayList<Integer>> receiversPerRound = new HashMap<Integer, ArrayList<Integer>>();
 
@@ -185,10 +181,11 @@ public class AppNode {
 		System.out.println("Expected #InfectedProcesses per Round:");
 		double prev_avg = 0;
 		for (Integer round : receiversPerRound.keySet()) {
-			if (prev_avg >= this.node_count) break;
+			if (prev_avg >= this.node_count)
+				break;
 			double sum = receiversPerRound.get(round).get(0);
 			double counters = receiversPerRound.get(round).get(1);
-			double avg = (double)(sum / counters);
+			double avg = (double) (sum / counters);
 			prev_avg = prev_avg + Double.valueOf(avg);
 			System.out.println("round: " + round + " avg: " + prev_avg);
 		}
@@ -198,40 +195,6 @@ public class AppNode {
 		System.out.println(this.from_ratio.toString());
 	}
 
-	// @ScheduledMethod(start = 1, interval = 0)
-	public void EventIdsTEST() {
-		EventIds eIds = new EventIds(this.node_count);
-		eIds.add(1, 0);
-		eIds.log();
-		eIds.add(1, 5);
-		eIds.log();
-		eIds.add(1, 4);
-		eIds.log();
-		eIds.add(1, 3);
-		eIds.log();
-		eIds.add(1, 1);
-		eIds.log();
-		eIds.add(0, 3);
-		eIds.log();
-		eIds.add(0, 5);
-		eIds.log();
-		eIds.add(0, 4);
-		eIds.log();
-		eIds.add(0, 9);
-		eIds.log();
-		eIds.add(0, 8);
-		eIds.log();
-		eIds.add(0, 7);
-		eIds.log();
-		eIds.add(0, 6);
-		eIds.log();
-		System.out.println(eIds.contains(0, 8));
-		System.out.println(eIds.contains(0, 9));
-		System.out.println(eIds.contains(1, 8));
-		System.out.println(eIds.contains(1, 2));
-		System.out.println(eIds.contains(1, 3));
-	}
-	
 	public String receivedBy(String eId) {
 		return this.messages.get(eId).toString();
 	}

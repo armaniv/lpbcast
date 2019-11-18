@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+/**
+ * Class for statistics computation
+ */
 public class AnalyzedMessage {
 	public String id;
 	public Integer creationRound;

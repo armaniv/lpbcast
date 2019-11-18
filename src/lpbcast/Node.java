@@ -206,12 +206,11 @@ public class Node {
 	public String broadcast() {
 		Event event = new Event(this.id, this.eventIdCounter);
 		this.myEvents.add(event);
-		// tell to itself that this event is new and was not gossiped yet
-		this.myNewEvents.add(new Pair<Event, Boolean>(event, false));
-		
+		this.myNewEvents.add(new Pair<Event, Boolean>(event, false)); // tell to itself that this event is new and was
+																		// not gossiped yet
 		deliver(event.getId(), "self");
-		
 		eventIdCounter++;
+
 		if (this.age_purging) {
 			removeOldestNotifications();
 		}
@@ -738,10 +737,8 @@ public class Node {
 			this.analyzedDeliveryRatio = this.analyzedDelivered / (double) this.analyzedSentEvents;
 		}
 		
-		//reset counter
+		//reset delivered counter
 		this.analyzedDelivered = 0;
-		
-		//System.out.println(this.analyzedDeliveryRatio + "= " + this.analyzedDelivered +"/"+ this.analyzedSentEvents);
 	}
 
 	public double getAnalyzedDeliveryRatio() {
@@ -755,16 +752,5 @@ public class Node {
 			}
 		}
 		return false;
-	}
-	
-	//@ScheduledMethod(start = 400, interval = 1)
-	public void f() {
-		if (this.hasNewEvents()) {
-			System.out.println(this.id + " " + this.myNewEvents.size());
-			for (Pair<Event,Boolean> p : this.myNewEvents) {
-				System.out.println("\t" + p.getX().toString());
-				System.out.println("\t" + this.appNode.receivedBy(p.getX().toString()));
-			}
-		}
 	}
 }

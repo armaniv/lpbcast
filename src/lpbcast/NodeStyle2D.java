@@ -15,7 +15,7 @@ public class NodeStyle2D extends DefaultStyleOGL2D {
 		if (node.getNodeState() == NodeState.CRASHED) {
 			return Color.RED;
 		} else if (node.getNodeState() == NodeState.UNSUB) {
-			return Color.MAGENTA; // its like a purple
+			return Color.MAGENTA;
 		} else if (node.hasNewEvents()) {
 			return Color.GREEN;
 		} else
