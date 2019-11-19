@@ -1,0 +1,18 @@
+Experiment:
+	- Analysis: expected number of infected processes 
+	for a given round with different fanout values
+
+Settings:
+	- Fanout = 3 | 4 | 5
+	- Node Count = 125
+	- Msg per Round = 1
+	- Analized messages = 50
+	- NO Optimizations
+	- View Size = 30
+	- Events Size = 30
+	- Statistics calculated in the following way:
+		Each round a random process (maybe the same)
+		generates a event that is injected in the system. 
+		The system is left to stabilize for 100 rounds. 
+		Then 50 consecutive messages are taken 
+		and statistics are calculated.

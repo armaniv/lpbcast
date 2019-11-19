@@ -1,0 +1,12 @@
+set datafile separator ","
+set xlabel '#processes (system size)'				# x-axis label
+set ylabel '#rounds'			# y-axis label
+
+set yrange [10:20]
+
+set key inside right bottom
+set pointintervalbox 3       
+set output "expectedNoOfRoundsToInfect.png"
+
+plot "dataset.txt" using 1:2 with lines linestyle 1
+     
