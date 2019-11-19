@@ -1,10 +1,10 @@
 Experiment:
-	- Analysis: expected number of infected processes 
-	for a given round with different fanout values
+	- Analysis: Expected number of rounds necessary to 
+	infect 0.99 of the system, given a system of size n
 
 Settings:
-	- Fanout = 3 | 4 | 5
-	- Node Count = 125
+	- Fanout = 3
+	- Node Count = n = 100 | 200 | 300 | ... | 1000
 	- Msg per Round = 1
 	- Analized messages = 50
 	- NO Optimizations

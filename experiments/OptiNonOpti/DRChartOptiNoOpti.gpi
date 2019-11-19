@@ -1,0 +1,14 @@
+set datafile separator ","
+set xlabel 'Tick'				# x-axis label
+set ylabel 'Delivery ratio'			# y-axis label
+
+set yrange [0:1.05]
+set xrange [50:1700]
+
+set key inside left bottom
+
+set term pngcairo             
+set output "DeliveryRatio.png"
+
+plot "DRNoOpti.txt" using 1:2 with line lc rgb "#ffd700" lw 2 title 'NoOpti',\
+     "DROpti.txt" using 1:2 with line lc 'red' lw 2 title 'Opti'

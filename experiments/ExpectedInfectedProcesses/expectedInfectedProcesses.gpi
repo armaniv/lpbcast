@@ -1,15 +1,16 @@
 set datafile separator ","
-set xlabel '#rounds'				# x-axis label
-set ylabel '#infected processes'			# y-axis label
+set xlabel '# rounds'				# x-axis label
+set ylabel '# infected processes'		# y-axis label
 
-set yrange [0:150]
+set yrange [0:135]
+set xrange [1:15]
 
 set key inside right bottom
 
 set term pngcairo             
 set output "expectedInfectedProcesses.png"
 
-plot "datasetF3.txt" using 2:1 smooth cspline lc rgb "#ffd700" lw 2 title 'F=3',\
-     "datasetF4.txt" using 2:1 smooth cspline lc "red" lw 2 title 'F=4',\
-     "datasetF5.txt" using 2:1 smooth cspline lc "blue" lw 2 title 'F=5'
+plot "datasetF3.txt" using 2:1 with line lc rgb "#ffd700" lw 2 title 'F=3',\
+     "datasetF4.txt" using 2:1 with line lc "red" lw 2 title 'F=4',\
+     "datasetF5.txt" using 2:1 with line lc "blue" lw 2 title 'F=5'
      

@@ -1,12 +1,9 @@
 set datafile separator ","
-set xlabel '#processes (system size)'				# x-axis label
-set ylabel '#rounds'			# y-axis label
+set xlabel '# processes'		# x-axis label
+set ylabel '# rounds'			# y-axis label
 
-set yrange [10:20]
-
-set key inside right bottom
-set pointintervalbox 3       
+set term pngcairo             
 set output "expectedNoOfRoundsToInfect.png"
 
-plot "dataset.txt" using 1:2 with lines linestyle 1
+plot "dataset.txt" using 2:1 smooth bezier lc 'red' lw 2 title ''
      
