@@ -62,6 +62,8 @@ public class Node {
 	// --- node's variables for statistics
 	private int analyzedDelivered = 0;
 	private int analyzedMsg_per_round;
+	
+	ArrayList<RepastEdge<Object>> edges;
 
 	public Node(int id, Grid<Object> grid, Router router, int max_l, int max_m, int fanout, int initial_neighbors,
 			int round_k, int round_r, boolean optimizations_ON, int nodes_count, int msg_per_round) {
@@ -92,6 +94,8 @@ public class Node {
 		this.retrieveBuf = new ArrayList<>();
 		this.round = 0;
 		this.eventIdCounter = 0;
+		
+		this.edges = new ArrayList<RepastEdge<Object>>();
 	}
 
 	/**
@@ -168,6 +172,9 @@ public class Node {
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
+			for (RepastEdge<Object> edge : this.edges) {
+				network.removeEdge(edge);
+			}
 
 			LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
 			int i = 0;
@@ -177,11 +184,9 @@ public class Node {
 				Integer destinationId = this.view.get(rnd).getNodeId();
 				if (!selected.contains(destinationId) && destinationId != this.id) {
 					selected.add(destinationId);
-					for (RepastEdge<Object> edge : network.getOutEdges(this)) {
-						network.removeEdge(edge);
-					}
+					
 					Node destination = this.router.locateNode(destinationId);
-					network.addEdge(this, destination);
+					this.edges.add(network.addEdge(this, destination));
 
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 1, PriorityType.RANDOM);
