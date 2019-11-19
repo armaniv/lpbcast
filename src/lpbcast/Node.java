@@ -245,21 +245,7 @@ public class Node {
 		}
 		
 		// ---- phase 3
-		ArrayList<Event> gossipEvents = gossip.getEvents();
-		for (int i = 0; i < gossipEvents.size(); i++) {
-			Event e = gossipEvents.get(i);
-
-			if (!this.eventIds.contains(e.getCreatorId(), e.getEventId())) {
-				if (!findEvent(this.events, e.getId())) {
-					this.events.add(e);
-					// deliver event to the application
-					this.deliver(e.getId(), "gossip");
-					this.analyzedDelivered++;
-					this.eventIds.add(e.getCreatorId(), e.getEventId());
-				}
-			}
-		}
-		
+		manageEvents(gossip);
 		
 		manageRetrievements(gossip);
 		
@@ -327,21 +313,6 @@ public class Node {
 					this.subs.add(n_sub);
 			}
 		}
-		
-//		for (Membership n_sub : gossip.getSubs()) {
-//			if (n_sub.getNodeId() != this.id) {
-//
-//				Membership n = findMembership(n_sub, this.view);
-//				if (n == null) {
-//					this.view.add(n_sub);
-//
-//					n = findMembership(n_sub, this.subs);
-//					if (n == null) {
-//						this.subs.add(n_sub);
-//					}
-//				}
-//			}
-//		}
 	}
 	
 	private void manageEvents(Message gossip) {
@@ -354,7 +325,6 @@ public class Node {
 					this.events.add(e);
 					// deliver event to the application
 					this.deliver(e.getId(), "gossip");
-					this.analyzedDelivered++;
 					this.eventIds.add(e.getCreatorId(), e.getEventId());
 				}
 			}
@@ -717,6 +687,10 @@ public class Node {
 
 	public void deliver(String eId, String from) {
 		this.appNode.signalEventReception(eId, this.id, this.round, from);
+
+		if (from.equals("self") || from.equals("gossip")) {
+			this.analyzedDelivered++;
+		}
 	}
 
 	public NodeState getNodeState() {
