@@ -2,11 +2,11 @@ package lpbcast;
 
 public class Unsubscription {
 	private Integer nodeId; 	// the node identifier
-	private Integer age; 		// the round at which the unsub is generated
+	private Integer generationRound; 		// the round at which the unsub is generated
 
 	public Unsubscription(Integer nodeId, Integer age) {
 		this.nodeId = nodeId;
-		this.age = age;
+		this.generationRound = age;
 	}
 
 	public Integer getNodeId() {
@@ -14,7 +14,7 @@ public class Unsubscription {
 	}
 
 	public Integer getAge() {
-		return age;
+		return generationRound;
 	}
 
 	@Override
@@ -26,6 +26,6 @@ public class Unsubscription {
 		if (!(obj instanceof Unsubscription))
 			return false;
 		Unsubscription o = (Unsubscription) obj;
-		return (o.getNodeId().equals(this.nodeId) && o.getAge().equals(this.age));
+		return (o.getNodeId().equals(this.nodeId) && o.getAge().equals(this.generationRound));
 	}
 }

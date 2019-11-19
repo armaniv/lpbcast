@@ -19,7 +19,7 @@
 									
 		/>
 				<parameter name="round_k" displayName="K waiting rounds" type="int" 
-						defaultValue="10" 
+						defaultValue="7" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -36,13 +36,6 @@
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
-				<parameter name="age_purging" displayName="Age purging opt" type="boolean" 
-						defaultValue="true" 
-						isReadOnly="false" 
-						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
-									values="true false "
-						
-		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
 						defaultValue="24000" 
 						isReadOnly="false" 
@@ -50,13 +43,13 @@
 									
 		/>
 				<parameter name="round_r" displayName="R waiting rounds" type="int" 
-						defaultValue="10" 
+						defaultValue="7" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
-				<parameter name="frequency_purging" displayName="Freq purging opt" type="boolean" 
-						defaultValue="true" 
+				<parameter name="optimization_ON" displayName="Optimizations" type="boolean" 
+						defaultValue="false" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
