@@ -3,6 +3,8 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -57,7 +59,7 @@ public class Node {
 	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
 	private int round; 							// the node's round
-	private int eventIdCounter; 				// count how many events a node created
+	private Integer eventIdCounter; 				// count how many events a node created
 		
 	// --- node's variables for statistics
 	private int analyzedDelivered = 0;
@@ -182,10 +184,12 @@ public class Node {
 			while (i < min) {
 				int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
 				Integer destinationId = this.view.get(rnd).getNodeId();
+				Node destination = this.router.locateNode(destinationId);
+				
 				if (!selected.contains(destinationId) && destinationId != this.id) {
 					selected.add(destinationId);
 					
-					Node destination = this.router.locateNode(destinationId);
+					
 					this.edges.add(network.addEdge(this, destination));
 
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
@@ -331,17 +335,11 @@ public class Node {
 	}
 	
 	private void manageEvents(Message gossip) {
-		ArrayList<Event> gossipEvents = gossip.getEvents();
-		for (int i = 0; i < gossipEvents.size(); i++) {
-			Event e = gossipEvents.get(i);
-
+		for (Event e : gossip.getEvents()) {
 			if (!this.eventIds.contains(e.getId())) {
-				if (!findEvent(this.events, e.getId())) {
-					this.events.add(e);
-					// deliver event to the application
-					this.deliver(e.getId(), "gossip");
-					this.eventIds.add(e.getId());
-				}
+				this.events.add(e);
+				this.deliver(e.getId(), "gossip");
+				this.eventIds.add(e.getId());
 			}
 		}
 	}
@@ -350,6 +348,7 @@ public class Node {
 		// if there are events that other nodes have seen
 		// but this node did not, schedule a retrieve action
 		// where the sender of the message containing that id is contacted
+		
 		for (String dig : gossip.getEventIds()) {
 			if (!this.eventIds.contains(dig)) {
 				Element elem = new Element(dig, this.round, gossip.getSender());
@@ -357,7 +356,7 @@ public class Node {
 				if (!this.retrieveBuf.contains(elem)) {
 					this.retrieveBuf.add(elem);
 
-					// schedule retrieve
+					// schedule retrievement
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
 					ScheduleParameters scheduleParameters = ScheduleParameters
 							.createOneTime(schedule.getTickCount() + this.round_k);
@@ -506,13 +505,6 @@ public class Node {
 		return target;
 	}
 
-	private void scheduleRetrieveFromSender(Element elem) {
-		ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-		ScheduleParameters scheduleParameters = ScheduleParameters
-				.createOneTime(schedule.getTickCount() + this.round_k);
-		schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
-	}
-
 	/**
 	 * Requests the input element from the node who has forwarded it to this node
 	 * and if the node gives a negative answer it schedules a RetrieveFromRandom
@@ -524,7 +516,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		// if still had not received the event
 		// ask the sender for it
-		if (!this.eventIds.contains(element.getId())) {
+		if (this.retrieveBuf.contains(element)) {
 			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender());
 			if (e == null) {
 				// if we don't receive an answer from the sender
@@ -535,11 +527,13 @@ public class Node {
 				schedule.schedule(scheduleParameters, new RetrieveFromRandom(element, this));
 			} else {
 				this.events.add(e);
-				this.deliver(e.getId(), "sender");
 				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
+				this.deliver(e.getId(), "sender");
 			}
 		}
+
+		
 	}
 
 	/**
@@ -567,12 +561,14 @@ public class Node {
 					this.deliver(event.getId(), "source");
 					this.eventIds.add(event.getId());
 					this.retrieveBuf.remove(element);
+					//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from source");
 				}
 			} else {
 				this.events.add(event);
 				this.deliver(event.getId(), "rnd");
 				this.eventIds.add(event.getId());
 				this.retrieveBuf.remove(element);
+				//System.out.println(this.id + " # DELIVERS # " + event.getId() + " from random");
 			}
 		}
 	}
@@ -750,12 +746,7 @@ public class Node {
 		return false;
 	}
 	
-	private boolean findEvent(ArrayList<Event> events, String eId) {
-		for (Event e : events) {
-			if (e.getId().equals(eId)) {
-				return true;
-			}
-		}
-		return false;
+	public Integer getEventCounter() {
+		return this.eventIdCounter;
 	}
 }

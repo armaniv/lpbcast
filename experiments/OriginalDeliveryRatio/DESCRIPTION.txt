@@ -1,0 +1,12 @@
+Experiment:
+	- Analysis: Delivry Ratio of implementation of original
+	algorithm which reflects the pseudocode of the paper
+
+Settings:
+	- Fanout = 4
+	- Node Count = 60
+	- Msg per Round = 30
+	- Analized messages = all
+	- NO Optimizations
+	- View Size = 30
+	- Events Size = 30

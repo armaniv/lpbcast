@@ -34,7 +34,7 @@ public class Event implements Comparable {
 		this.age = age;
 	}
 
-	public int getEventId() {
+	public Integer getEventId() {
 		return this.eventId;
 	}
 
