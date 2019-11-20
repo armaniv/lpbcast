@@ -6,13 +6,8 @@ import java.util.HashMap;
 public class EventIds {
 	private HashMap<Integer, ArrayList<Integer>> eventIds;
 
-	public EventIds(int nodesCount) {
+	public EventIds() {
 		this.eventIds = new HashMap<Integer, ArrayList<Integer>>();
-		for (int i=0; i<nodesCount; i++) {
-			ArrayList<Integer> events = new ArrayList<Integer>();
-			events.add(-1);
-			this.eventIds.put(i, events);
-		}
 	}
 
 	public EventIds(HashMap<Integer, ArrayList<Integer>> eventIds) {
@@ -21,6 +16,12 @@ public class EventIds {
 	}
 
 	public boolean contains(Integer nodeId, Integer eventId) {
+		if(!this.eventIds.containsKey(nodeId)) {
+			ArrayList<Integer> events = new ArrayList<Integer>();
+			events.add(-1);
+			this.eventIds.put(nodeId, events);
+		}
+		
 		ArrayList<Integer> events = this.eventIds.get(nodeId);
 		if (events == null) {
 			return false;
@@ -46,6 +47,12 @@ public class EventIds {
 	}
 	
 	public int contains(Integer nodeId, Integer eventId, boolean isNull) {
+		if(!this.eventIds.containsKey(nodeId)) {
+			ArrayList<Integer> events = new ArrayList<Integer>();
+			events.add(-1);
+			this.eventIds.put(nodeId, events);
+		}
+		
 		ArrayList<Integer> events = this.eventIds.get(nodeId);
 		if (events == null) {
 			return -1;
@@ -71,6 +78,12 @@ public class EventIds {
 	}
 
 	public void add(Integer nodeId, Integer eventId) {
+		if(!this.eventIds.containsKey(nodeId)) {
+			ArrayList<Integer> events = new ArrayList<Integer>();
+			events.add(-1);
+			this.eventIds.put(nodeId, events);
+		}
+		
 		ArrayList<Integer> events = this.eventIds.get(nodeId);
 		if (events == null) {
 			events = new ArrayList<Integer>();

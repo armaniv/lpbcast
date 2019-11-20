@@ -88,7 +88,7 @@ public class Node {
 
 		this.myNewEvents = new ArrayList<>();
 
-		this.eventIds = new EventIds(nodes_count);
+		this.eventIds = new EventIds();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();
