@@ -26,6 +26,7 @@ Give an example
 ## Built With
 
 * [Repast Simphony](https://repast.github.io/) - An advanced, free, and open source agent-based modeling and simulation platforms
+* [gnuplot](http://www.gnuplot.info/) - A portable command-line driven graphing utility
 
 ## Reference
 
