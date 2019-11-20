@@ -28,7 +28,7 @@ public class AppNode {
 
 	// --- variables for statistics
 	private ArrayList<AnalyzedMessage> analyzed_messages;
-	private int analyzed_n_messages = 300;
+	private int analyzed_n_messages = 50;
 	private int analyze_start_consider_messages_at_round = 100;
 	private HashMap<String, Integer> from_ratio;
 

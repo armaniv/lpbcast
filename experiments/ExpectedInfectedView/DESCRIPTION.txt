@@ -1,14 +1,15 @@
 Experiment:
-	- Analysis: Expected number of rounds necessary to 
-	infect 0.99 of the system, given a system of size n
+	- Analysis: expected number of infected processes 
+	for a given round with different view size values
 
 Settings:
 	- Fanout = 3
-	- Node Count = n = 100 | 200 | 300 | ... | 1000
+	- Node Count = 125
 	- Msg per Round = 1
+	- Num messages = 200
 	- Analized messages = 50
 	- NO Optimizations
-	- View Size = 30
+	- View Size = 20 | 25 | 30
 	- Events Size = 30
 	- Statistics calculated in the following way:
 		Each round a random process (maybe the same)
@@ -16,3 +17,5 @@ Settings:
 		The system is left to stabilize for 100 rounds. 
 		Then 50 consecutive messages are taken 
 		and statistics are calculated.
+		Data collected from different executions of the simulator,
+		one per view size values.
