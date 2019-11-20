@@ -112,7 +112,7 @@ public class AppNode {
 	/**
 	 * Periodic function in charge of simulating the unsubscription rate.
 	 */
-	@ScheduledMethod(start = 3, interval = 7)
+	@ScheduledMethod(start = 3, interval = 8)
 	public void generateUnsubscription() {
 		int n_unsubs = (this.node_count * this.unsub_rate) / 100;
 		int tmp = n_unsubs;
@@ -124,7 +124,7 @@ public class AppNode {
 				tmp--;
 
 				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 7);
+				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 8);
 				schedule.schedule(scheduleParameters, new RecoverAndSubscribe(this.nodes.get(rnd)));
 			}
 		}
