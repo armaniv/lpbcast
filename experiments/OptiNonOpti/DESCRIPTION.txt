@@ -1,0 +1,21 @@
+Experiment:
+	- Analysis: delivery ratio of initial (random purging) and 
+	optimized (age-based and frequency-based membership urging) versions of lpbcast.
+
+
+
+Settings:
+	- Fanout = 4
+	- Node Count = n = 60
+	- Msg per Round = 30
+	- Num messages = 24000
+	- Optimizations = yes/no
+	- Churn rate = 5%
+	- Message loss rate = 10%
+	- View Size = 30
+	- Events Size = 30
+	- Statistics calculated in the following way:
+		Data collected from two different executions of the simulator,
+		one with the optimizations, the other without. 
+		The system is left stabilize for 100 rounds. 
+		The statistics are collected from 100th to 1700th round.
