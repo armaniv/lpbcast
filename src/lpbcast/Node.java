@@ -168,7 +168,6 @@ public class Node {
 
 			// create a new gossip message
 			Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
-			//analyzedComputeDeliveryRatio(gossip.getEvents().size());
 
 			context = ContextUtils.getContext(this);
 			network = (Network<Object>) context.getProjection("network");
@@ -627,23 +626,29 @@ public class Node {
 
 		Message gossip = new Message(this.id, this.events, this.eventIds, this.subs, this.unSubs);
 
+		context = ContextUtils.getContext(this);
+		network = (Network<Object>) context.getProjection("network");
+		for (RepastEdge<Object> edge : this.edges) {
+			network.removeEdge(edge);
+		}
+
 		LinkedHashSet<Integer> selected = new LinkedHashSet<Integer>();
 		int i = 0;
-		while (i < Math.min(fanout, this.view.size())) {
+		int min = Math.min(fanout, this.view.size());
+		while (i < min) {
 			int rnd = RandomHelper.nextIntFromTo(0, this.view.size() - 1);
-			if (!selected.contains(rnd)) {
-				Integer destinationId = this.view.get(rnd).getNodeId();
-
-				for (RepastEdge<Object> edge : network.getOutEdges(this)) {
-					network.removeEdge(edge);
-				}
+			Integer destinationId = this.view.get(rnd).getNodeId();
+			if (!selected.contains(destinationId) && destinationId != this.id) {
+				selected.add(destinationId);
+				
 				Node destination = this.router.locateNode(destinationId);
-				network.addEdge(this, destination);
 
-				router.sendGossip(gossip, this.id, this.view.get(rnd).getNodeId());
+				ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+				ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 1, PriorityType.RANDOM);
+				schedule.schedule(scheduleParameters,
+						new ReceiveGossip(this.id, destination.getId(), gossip, router));
 				i++;
 			}
-
 		}
 	}
 

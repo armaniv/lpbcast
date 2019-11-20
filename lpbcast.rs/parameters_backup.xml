@@ -7,13 +7,13 @@
 									
 		/>
 				<parameter name="grid_size" displayName="Grid size" type="int" 
-						defaultValue="50" 
+						defaultValue="20" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="msg_loss_rate" displayName="Percent msg loss rate" type="int" 
-						defaultValue="0" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -25,7 +25,7 @@
 									
 		/>
 				<parameter name="msg_per_round" displayName="Msg per Round" type="int" 
-						defaultValue="1" 
+						defaultValue="10" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -37,7 +37,7 @@
 									
 		/>
 				<parameter name="n_messages" displayName="Num messages" type="int" 
-						defaultValue="200" 
+						defaultValue="8000" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
@@ -49,20 +49,20 @@
 									
 		/>
 				<parameter name="optimization_ON" displayName="Optimizations" type="boolean" 
-						defaultValue="false" 
+						defaultValue="true" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$BooleanConverter"
 									values="true false "
 						
 		/>
 				<parameter name="node_count" displayName="Node count" type="int" 
-						defaultValue="125" 
+						defaultValue="60" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
 		/>
 				<parameter name="churn_rate" displayName="Percent churn rate" type="int" 
-						defaultValue="0" 
+						defaultValue="5" 
 						isReadOnly="false" 
 						converter="repast.simphony.parameter.StringConverterFactory$IntConverter"
 									
