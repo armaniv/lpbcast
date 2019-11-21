@@ -52,7 +52,8 @@ public class Node {
 															// if the map is not empty, it means that it contains my events 
 															// which were not received by all other nodes
 	
-	private EventIds eventIds; 					// the node's identifier events list
+	private EventIds logEventIds; 				// optimized log of deliveries of this node
+	private ArrayList<String> eventIds;			// the node's identifier events list
 	private ArrayList<Membership> subs; 		// the node's subscriptions list
 	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
 	private ArrayList<Element> retrieveBuf; 	// the message to retrieve list
@@ -80,21 +81,18 @@ public class Node {
 		this.membership_K = 1;
 		this.long_ago = 7;
 		this.analyzedMsg_per_round = msg_per_round;
-
 		this.id = id;
 		this.view = new ArrayList<>();
 		this.events = new ArrayList<>();
 		this.myEvents = new ArrayList<>();
-
 		this.myNewEvents = new ArrayList<>();
-
-		this.eventIds = new EventIds();
+		this.eventIds = new ArrayList<String>();
+		this.logEventIds = new EventIds();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();
 		this.round = 0;
 		this.eventIdCounter = 0;
-		
 		this.edges = new ArrayList<RepastEdge<Object>>();
 	}
 
@@ -153,7 +151,8 @@ public class Node {
 				boolean b = (Boolean) pair.getY();
 				if (!b) {
 					this.events.add(e);
-					this.eventIds.add(e.getCreatorId(), e.getEventId());
+					this.eventIds.add(e.getId());
+					this.logEventIds.add(e.getCreatorId(), e.getEventId());
 					// set new event as Gossiped
 					pair.setY(true);
 				}
@@ -187,8 +186,15 @@ public class Node {
 					Node destination = this.router.locateNode(destinationId);
 					this.edges.add(network.addEdge(this, destination));
 
+					int[] randomMsgPropagationDelays = {1,3,5,7, 9};
+					ArrayList<Integer> array = new ArrayList<Integer>() ;
+					for (int r : randomMsgPropagationDelays) {
+						array.add(r);
+					}
+					Collections.shuffle(array);
+					
 					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + 1, PriorityType.RANDOM);
+					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + array.get(0), PriorityType.RANDOM);
 					schedule.schedule(scheduleParameters,
 							new ReceiveGossip(this.id, destination.getId(), gossip, router));
 					i++;
@@ -220,11 +226,16 @@ public class Node {
 	
 	public void receive(Message gossip) {
 		if (this.nodeState != NodeState.CRASHED && this.nodeState != NodeState.UNSUB) {
+			
 			if (!this.optimizations_ON) {
 				classicReceive(gossip);
 			}else {
 				optimizedReceive(gossip);
 			}
+		}
+		// truncates eventIds removing oldest elements
+		while (this.eventIds.size() > this.max_m) {
+			this.eventIds.remove(0);
 		}
 	}
 	
@@ -323,14 +334,16 @@ public class Node {
 		ArrayList<Event> gossipEvents = gossip.getEvents();
 		for (int i = 0; i < gossipEvents.size(); i++) {
 			Event e = gossipEvents.get(i);
+			
+			if (!this.eventIds.contains(e.getId())) {
+				this.eventIds.add(e.getId());
+			}
 
-			if (!this.eventIds.contains(e.getCreatorId(), e.getEventId())) {
-				if (!findEvent(this.events, e.getId())) {
-					this.events.add(e);
-					// deliver event to the application
-					this.deliver(e.getId(), "gossip");
-					this.eventIds.add(e.getCreatorId(), e.getEventId());
-				}
+			if (!this.logEventIds.contains(e.getCreatorId(), e.getEventId())) {
+				this.events.add(e);
+				// deliver event to the application
+				this.deliver(e.getId(), "gossip");
+				this.logEventIds.add(e.getCreatorId(), e.getEventId());
 			}
 		}
 	}
@@ -339,43 +352,19 @@ public class Node {
 		// if there are events that other nodes have seen
 		// but this node did not, schedule a retrieve action
 		// where the sender of the message containing that id is contacted
-		for (Integer node : gossip.getEventIds().getMap().keySet()) {
-			ArrayList<Integer> gEventIds = gossip.getEventIds().getMap().get(node);
+		
+		for (String dig : gossip.getEventIds()) {
+			if (!this.eventIds.contains(dig)) {
+				Element elem = new Element(dig, this.round, gossip.getSender());
 
-			for (Integer eventId : gEventIds) {
-				boolean isGELastInSeq = (gEventIds.indexOf(eventId) == 0);
-				int isContainedOutcome = this.eventIds.contains(node, eventId, true);
-				
-				if (isContainedOutcome == -1 && isGELastInSeq) {
-					
-					for (int eId = 0; eId <= eventId; eId++) {
-						Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
-						
-						if (!isInRetrieveBuf(elem)) {
-							this.retrieveBuf.add(elem);
-							scheduleRetrieveFromSender(elem);
-						}
-					}
-					
-				}else if (isContainedOutcome == 0  && isGELastInSeq) {
-					int myLastInSeq = this.eventIds.getMap().get(node).get(0);
-					
-					for (int eId = myLastInSeq + 1; eId <= eventId; eId++) {
-						Element elem = new Element(node + "_" + eId, this.round, gossip.getSender());
-						
-						if (!isInRetrieveBuf(elem) && !this.eventIds.contains(node, eId)) {
-							this.retrieveBuf.add(elem);
-							scheduleRetrieveFromSender(elem);
-						}
-					}
-					
-				}else if (isContainedOutcome != 1 && !isGELastInSeq) {
-					Element elem = new Element(node + "_" + eventId, this.round, gossip.getSender());
-					
-					if (!isInRetrieveBuf(elem)) {
-						this.retrieveBuf.add(elem);
-						scheduleRetrieveFromSender(elem);
-					}
+				if (!this.retrieveBuf.contains(elem)) {
+					this.retrieveBuf.add(elem);
+
+					// schedule retrieve
+					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
+					ScheduleParameters scheduleParameters = ScheduleParameters
+							.createOneTime(schedule.getTickCount() + this.round_k);
+					schedule.schedule(scheduleParameters, new RetrieveFromSender(elem, this));
 				}
 			}
 		}
@@ -538,7 +527,7 @@ public class Node {
 	public void requestEventFromSender(Element element) {
 		// if still had not received the event
 		// ask the sender for it
-		if (!this.eventIds.contains(element.getGeneratorNodeId(), element.getEventId())) {
+		if (!this.logEventIds.contains(element.getGeneratorNodeId(), element.getEventId())) {
 			Event e = router.requestEvent(element.getId(), this.id, element.getGossipSender());
 			if (e == null) {
 				// if we don't receive an answer from the sender
@@ -550,7 +539,8 @@ public class Node {
 			} else {
 				this.events.add(e);
 				this.deliver(e.getId(), "sender");
-				this.eventIds.add(e.getCreatorId(), e.getEventId());
+				this.logEventIds.add(e.getCreatorId(), e.getEventId());
+				this.eventIds.add(e.getId());
 				this.retrieveBuf.remove(element);
 			}
 		}
@@ -566,7 +556,7 @@ public class Node {
 	 public void requestEventFromRandom(Element element) {
 		// if still had not received the event
 		// ask the a random node for it
-		if (!this.eventIds.contains(element.getGeneratorNodeId(), element.getEventId())) {
+		if (!this.logEventIds.contains(element.getGeneratorNodeId(), element.getEventId())) {
 			int rnd = RandomHelper.nextIntFromTo(0, view.size() - 1);
 			String eventId = element.getId();
 			Event event = router.requestEvent(eventId, this.id, view.get(rnd).getNodeId());
@@ -579,13 +569,15 @@ public class Node {
 				if (event != null) {
 					this.events.add(event);
 					this.deliver(event.getId(), "source");
-					this.eventIds.add(event.getCreatorId(), event.getEventId());
+					this.logEventIds.add(event.getCreatorId(), event.getEventId());
+					this.eventIds.add(element.getId());
 					this.retrieveBuf.remove(element);
 				}
 			} else {
 				this.events.add(event);
 				this.deliver(event.getId(), "rnd");
-				this.eventIds.add(event.getCreatorId(), event.getEventId());
+				this.logEventIds.add(event.getCreatorId(), event.getEventId());
+				this.eventIds.add(element.getId());
 				this.retrieveBuf.remove(element);
 			}
 		}

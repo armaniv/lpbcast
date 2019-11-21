@@ -13,6 +13,13 @@ public class Event implements Comparable {
 		this.id = creatorId + "_" + eventId;
 		this.age = 0;
 	}
+	
+	public Event(Integer creatorId, int eventId, int age) {
+		this.creatorId = creatorId;
+		this.eventId = eventId;
+		this.id = creatorId + "_" + eventId;
+		this.age = age;
+	}
 
 	public String getId() {
 		return this.id;
