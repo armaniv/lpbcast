@@ -186,17 +186,7 @@ public class Node {
 					Node destination = this.router.locateNode(destinationId);
 					this.edges.add(network.addEdge(this, destination));
 
-					int[] randomMsgPropagationDelays = {1,3,5,7, 9};
-					ArrayList<Integer> array = new ArrayList<Integer>() ;
-					for (int r : randomMsgPropagationDelays) {
-						array.add(r);
-					}
-					Collections.shuffle(array);
-					
-					ISchedule schedule = RunEnvironment.getInstance().getCurrentSchedule();
-					ScheduleParameters scheduleParameters = ScheduleParameters.createOneTime(schedule.getTickCount() + array.get(0), PriorityType.RANDOM);
-					schedule.schedule(scheduleParameters,
-							new ReceiveGossip(this.id, destination.getId(), gossip, router));
+					this.router.sendGossip(gossip, this.id, destinationId);
 					i++;
 				}
 

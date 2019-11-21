@@ -18,7 +18,7 @@ public class SchedulableActions {
 		}
 
 		public void execute() {
-			this.router.sendGossip(message, sourceNodeId, destinationNodeId);
+			this.router.send(message, sourceNodeId, destinationNodeId);
 		}
 	}
 
