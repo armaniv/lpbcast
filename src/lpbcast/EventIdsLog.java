@@ -3,14 +3,14 @@ package lpbcast;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class EventIds {
+public class EventIdsLog {
 	private HashMap<Integer, ArrayList<Integer>> eventIds;
 
-	public EventIds() {
+	public EventIdsLog() {
 		this.eventIds = new HashMap<Integer, ArrayList<Integer>>();
 	}
 
-	public EventIds(HashMap<Integer, ArrayList<Integer>> eventIds) {
+	public EventIdsLog(HashMap<Integer, ArrayList<Integer>> eventIds) {
 		this.eventIds = new HashMap<Integer, ArrayList<Integer>>();
 		this.eventIds.putAll(eventIds);
 	}

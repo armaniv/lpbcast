@@ -8,7 +8,7 @@ set xrange [50:1700]
 set key inside left bottom
 
 set term pngcairo             
-set output "DeliveryRatio.png"
+set output "DRFailNoFail.png"
 
 plot "DROptiNoFail.txt" using 1:2 with line lc rgb "#ffd700" lw 2 title 'Opti w/o failures',\
      "DROptiFail.txt" using 1:2 with line lc 'red' lw 2 title 'Opti with failures'

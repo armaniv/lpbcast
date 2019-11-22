@@ -1,8 +1,6 @@
 package lpbcast;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -52,7 +50,7 @@ public class Node {
 															// if the map is not empty, it means that it contains my events 
 															// which were not received by all other nodes
 	
-	private EventIds logEventIds; 				// optimized log of deliveries of this node
+	private EventIdsLog logEventIds; 				// optimized log of deliveries of this node
 	private ArrayList<String> eventIds;			// the node's identifier events list
 	private ArrayList<Membership> subs; 		// the node's subscriptions list
 	private ArrayList<Unsubscription> unSubs; 	// the node's un-subscriptions list
@@ -87,7 +85,7 @@ public class Node {
 		this.myEvents = new ArrayList<>();
 		this.myNewEvents = new ArrayList<>();
 		this.eventIds = new ArrayList<String>();
-		this.logEventIds = new EventIds();
+		this.logEventIds = new EventIdsLog();
 		this.subs = new ArrayList<>();
 		this.unSubs = new ArrayList<>();
 		this.retrieveBuf = new ArrayList<>();

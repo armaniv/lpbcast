@@ -19,7 +19,7 @@ public class Router {
 	public Router(int msg_loss_rate) {
 		this.msg_loss_rate = msg_loss_rate;
 		this.msgPropagationDelays = new ArrayList<Integer>();
-		int[] msgPropagationDelays = {1,3,7};
+		int[] msgPropagationDelays = {1};
 		for (int r : msgPropagationDelays) {
 			this.msgPropagationDelays.add(r);
 		}

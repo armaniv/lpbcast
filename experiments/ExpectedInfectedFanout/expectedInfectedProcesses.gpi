@@ -8,7 +8,7 @@ set xrange [1:13]
 set key inside right bottom
 
 set term pngcairo
-set output "expectedInfectedProcesses.png"
+set output "ExpectedInfectedFanout.png"
 
 plot "datasetF3.txt" using 1:2 with line lc rgb "#ffd700" lw 2 title 'F=3',\
      "datasetF4.txt" using 1:2 with line lc "red" lw 2 title 'F=4',\

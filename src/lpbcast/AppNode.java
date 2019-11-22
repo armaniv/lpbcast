@@ -1,6 +1,7 @@
 package lpbcast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -157,15 +158,22 @@ public class AppNode {
 		}
 	}
 
-	@ScheduledMethod(start = 400, interval = 0)
+	@ScheduledMethod(start = 300, interval = 0)
 	public void computeExpectedInfectedProcesses() {
 		HashMap<Integer, ArrayList<Integer>> receiversPerRound = new HashMap<Integer, ArrayList<Integer>>();
 
+		
 		for (AnalyzedMessage m : this.analyzed_messages) {
-			for (Integer round : m.receiversPerRound.keySet()) {
+			ArrayList<Integer> rounds = new ArrayList<Integer>(m.receiversPerRound.keySet());
+			Collections.sort(rounds);
+			int prevRound = 0;
+			for (Integer round : rounds) {
+				
 				if (!receiversPerRound.containsKey(round)) {
 					ArrayList<Integer> statistics = new ArrayList<Integer>(2);
-					statistics.add(0, m.receiversPerRound.get(round).size());
+					
+					int receiversCount = m.receiversPerRound.get(round).size();
+					statistics.add(0, receiversCount);
 					statistics.add(1, 1);
 					receiversPerRound.put(round, statistics);
 				} else {
@@ -176,18 +184,28 @@ public class AppNode {
 				}
 			}
 		}
-
+		
+		HashMap<Integer, Integer> cumulativeReceiversPerRound = new HashMap<Integer, Integer>();
+		ArrayList<Integer> rounds = new ArrayList<Integer>(receiversPerRound.keySet());
+		Collections.sort(rounds);
+		int prevRound=0;
+		for (Integer round : receiversPerRound.keySet()) {
+			if (prevRound > 0) {
+				cumulativeReceiversPerRound
+					.put(round, 
+						cumulativeReceiversPerRound.get(prevRound)+receiversPerRound.get(round).get(0));
+			}else {
+				cumulativeReceiversPerRound
+					.put(round, receiversPerRound.get(round).get(0));
+			}
+			prevRound = round;
+		}
 		System.out.println();
 		System.out.println("Expected #InfectedProcesses per Round:");
-		double prev_avg = 0;
-		for (Integer round : receiversPerRound.keySet()) {
-			if (prev_avg >= this.node_count)
-				break;
-			double sum = receiversPerRound.get(round).get(0);
-			double counters = receiversPerRound.get(round).get(1);
-			double avg = (double) (sum / counters);
-			prev_avg = prev_avg + Double.valueOf(avg);
-			System.out.println("round: " + round + " avg: " + prev_avg);
+		for (Integer round : cumulativeReceiversPerRound.keySet()) {
+			double sum = cumulativeReceiversPerRound.get(round);
+			double avg = (double) (sum / this.analyzed_messages.size());
+			System.out.println("round: " + round + " avg: " + avg);
 		}
 
 		System.out.println();
